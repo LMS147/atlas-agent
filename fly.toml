@@ -1,0 +1,16 @@
+# fly.toml — alternative deploy target
+app = "atlas-agent"
+primary_region = "jnb"
+
+[build]
+
+[mounts]
+  source = "agent_data"
+  destination = "/data"
+
+[env]
+  DATA_DIR = "/data"
+  MODEL = "llama-3.3-70b-versatile"
+
+[processes]
+  bot = "python bot.py"
