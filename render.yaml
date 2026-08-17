@@ -11,7 +11,7 @@ services:
       - key: PYTHON_VERSION
         value: "3.12"
       - key: MODEL
-        value: llama-3.3-70b-versatile
+        value: openai/gpt-oss-120b
       - key: TELEGRAM_TOKEN
         sync: false
       - key: GROQ_API_KEY
