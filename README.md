@@ -48,11 +48,45 @@ python bot.py
 `/reset` clears the current conversation: cheap, non-destructive.
 `memory.md` survives resets, restarts, and redeploys. That's the whole point.
 
-## Deploy to Render (paid worker, $7/mo — the simple path)
+## Deploy to Render — free tier (the committed `render.yaml`)
 
-`render.yaml` is committed, so: Dashboard → **New** → **Blueprint** → pick the
-repo → fill in the three secrets → apply. The disk mounts at `/data`;
-`DATA_DIR=/data` is set in the blueprint.
+Free web service + webhook + GitHub-backed memory. See the step-by-step
+below. `render.yaml` is the free blueprint; the paid worker variant is kept
+in `render.worker.yaml`.
+
+Setup order:
+1. Create a **private** GitHub repo for memory (e.g. `agent-memory`). Leave it empty.
+2. Create a **fine-grained PAT**: github.com → Settings → Developer settings →
+   Fine-grained tokens → only that repo → Repository permissions →
+   **Contents: Read and write**. Copy the `github_pat_...` token.
+3. Push this project to GitHub.
+4. Render → **New** → **Blueprint** → pick this repo → fill in the six
+   secrets (`TELEGRAM_TOKEN`, `GROQ_API_KEY`, `ALLOWED_USER_IDS`,
+   `GH_REPO`, `GH_TOKEN`, `WEBHOOK_SECRET`) → Apply.
+   `WEBHOOK_SECRET` = any long random string using only letters, digits,
+   `_` or `-` (Telegram rejects other characters).
+5. First boot seeds `agent.md` + `memory.md` into the memory repo as
+   commits. Message the bot `/whoami` if you still need your user id.
+
+Verify: send `/remember tests the deploy`, then check the memory repo on
+GitHub — you should see a commit `remember: tests the deploy`. Every memory
+write is a commit, so version history is free.
+
+Cold starts: the service sleeps after 15 min idle; the first message after
+that takes 30–60s (Telegram retries, so it arrives). Keep it warm with
+cron-job.org hitting `https://<your-app>.onrender.com/` every 10 minutes —
+the 404 response is fine, any request wakes it. That stays within the 750
+free instance-hours/month.
+
+Note: conversation sessions live in RAM, so every spin-down clears them
+(memory.md is unaffected). On free tier that's just life.
+
+## Deploy to Render — paid worker ($7/mo, `render.worker.yaml`)
+
+Simpler: polling + a real disk, no GitHub repo or webhook needed. Replace
+`render.yaml` with `render.worker.yaml`, then: Dashboard → **New** →
+**Blueprint** → fill in the three secrets → apply. The disk mounts at
+`/data`; `DATA_DIR=/data` is set in the blueprint.
 
 Verify with `/memory`, trigger a manual redeploy, check `/memory` again.
 If content survives, the disk is mounted correctly. Expect ~30s of silence
@@ -62,23 +96,17 @@ fine, a second instance would double-reply anyway).
 Shell tab: `cat /data/memory.md`, `ls /data/backups/`, or `vi /data/agent.md`
 to tune personality live — the system prompt is rebuilt every message.
 
-## Deploy free (webhook + GitHub-backed memory)
+## How the free-tier mode works under the hood
 
-Free Render services get no disk and sleep after 15 min idle. Workarounds,
-both already wired in:
+Two automatic switches, no code edits:
 
-1. **Storage → GitHub.** Create a private repo, a fine-grained PAT with
-   Contents read+write, then set `GH_REPO` and `GH_TOKEN`. `memory.py`
-   switches backends automatically; git commits replace local backups.
-2. **Transport → webhook.** Deploy as a **Web Service** (free plan). Render
-   injects `RENDER_EXTERNAL_URL` and `PORT`; `bot.py` detects them and runs
-   webhook mode. Set `WEBHOOK_SECRET` to any long random string. Leave the
-   health check path blank.
-
-Cold starts mean the first message after idle takes 30–60s (Telegram
-retries, so it arrives). A cron pinger every 10 min keeps it warm within the
-750 free instance-hours. Honestly: worth it as an exercise, not worth it if
-you just want the thing working — pay the $7.
+1. **Storage → GitHub** when `GH_REPO` is set: `memory.py` reads/writes the
+   memory repo via the Contents API instead of local files. Git commits
+   replace the local backup rotation.
+2. **Transport → webhook** when `RENDER_EXTERNAL_URL` exists (Render injects
+   it, plus `PORT`): `bot.py` runs `run_webhook` instead of polling, so
+   Telegram pushes updates to the service — which is what lets Render wake
+   it from sleep.
 
 ## Fly.io alternative
 

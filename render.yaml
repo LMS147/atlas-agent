@@ -1,3 +1,5 @@
+# Render free-tier deploy: Web Service + webhook + GitHub-backed memory.
+# Free plan has no disk, so memory lives in a private GitHub repo (GH_REPO).
 services:
   - type: web
     name: atlas-agent
@@ -5,15 +7,9 @@ services:
     plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: python bot.py
-    disk:
-      name: agent-data
-      mountPath: /data
-      sizeGB: 1
     envVars:
       - key: PYTHON_VERSION
-        value: "3.11"
-      - key: DATA_DIR
-        value: /data
+        value: "3.12"
       - key: MODEL
         value: llama-3.3-70b-versatile
       - key: TELEGRAM_TOKEN
@@ -22,3 +18,9 @@ services:
         sync: false
       - key: ALLOWED_USER_IDS
         sync: false
+      - key: GH_REPO
+        sync: false          # e.g. yourname/agent-memory (private repo)
+      - key: GH_TOKEN
+        sync: false          # fine-grained PAT, Contents: read+write on that repo
+      - key: WEBHOOK_SECRET
+        sync: false          # any long random string: letters, digits, _ or - ONLY

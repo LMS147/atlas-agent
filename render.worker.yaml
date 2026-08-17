@@ -1,0 +1,27 @@
+# Reference: the paid ($7/mo) Background Worker + Disk variant.
+# To use it, replace render.yaml with this file. No GH_REPO/GH_TOKEN needed —
+# memory lives on the mounted disk instead.
+services:
+  - type: worker
+    name: atlas-agent
+    runtime: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: python bot.py
+    disk:
+      name: agent-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12"
+      - key: DATA_DIR
+        value: /data
+      - key: MODEL
+        value: llama-3.3-70b-versatile
+      - key: TELEGRAM_TOKEN
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: ALLOWED_USER_IDS
+        sync: false
