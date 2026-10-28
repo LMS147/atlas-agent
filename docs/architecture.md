@@ -16,10 +16,18 @@ Android: Kotlin + Jetpack Compose + Material 3, MVVM, repository interface, Retr
 
 Backend: the existing Groq agent, memory service, GitHub storage, Telegram transport, and seed files have moved into Python packages. All runtime imports use `backend.*`; launch from the repository root. This avoids the `backend/telegram` folder shadowing the external `telegram` library. Local memory continues to use `DATA_DIR`, defaulting to `./data` relative to the process working directory. Seed lookup is now relative to the relocated backend package.
 
-## Planned API and infrastructure
+## API and persistence
 
-The FastAPI app and route/service modules are scaffolding. They expose no endpoints yet. The Android live API contract in api.md remains proposed. API authentication, SQLite-backed server sessions, file access, tasks, monitoring, Cloudflare Tunnel, and a persistent Termux API service are future work.
+FastAPI now implements bearer-authenticated health, chat, memory list/create, agent profile, and allowlisted file listing endpoints. API configuration loads backend/.env at startup, with exported variables taking precedence. Startup initializes the existing Markdown memory and a local SQLite database at DATA_DIR/atlas.sqlite3.
 
-The existing Python backend still uses local Markdown files or GitHub storage, with in-memory Telegram sessions. The Termux scripts manage the current Telegram process, not an API server. `healthcheck.sh` verifies process identity only.
+Chat routes invoke the existing synchronous Groq agent from worker-thread route handlers. Context and completed request results persist in SQLite; UUID request IDs prevent silent duplicate execution. Failed/interrupted requests return a conflict on replay. Per-conversation locks assume one API worker, enforced by the provided launcher. This is a single-owner API, not multi-user account authentication.
 
-Empty reserved directories use `.gitkeep` (Android/issue templates) or Python `__init__.py` files so they appear in GitHub. Neither placeholder indicates completed functionality.
+The existing Python memory backend still uses local Markdown or GitHub storage. Local file locks and atomic replacement let Telegram and the API share memory. Telegram's own conversation sessions remain in RAM and separate from API histories.
+
+Termux's default start/stop/health scripts now manage FastAPI and check authenticated HTTP health. The original Telegram scripts remain under explicit *-telegram.sh names. Existing Render/Fly configurations still serve Telegram. Cloudflare instructions describe HTTPS forwarding; no tunnel is configured automatically.
+
+## Remaining features
+
+Task/automation modules, hardware monitoring, file downloads/edits, server history/reset HTTP endpoints, multi-user accounts, permanent tunnel/boot integration, and independent domain/data mapping remain future work. File/profile screens are read-only. Public /docs and /openapi.json describe the API; workspace routes require the Atlas token.
+
+Reserved directories use .gitkeep or Python __init__.py. Their presence does not indicate a completed feature.

@@ -37,5 +37,5 @@ import kotlinx.coroutines.launch
 import com.atlas.ai.ui.theme.*
 
 @Composable internal fun ToolsScreen(s: UiState, vm: AtlasViewModel) {
- Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) { Heading("A little more capable", "Tools for your Atlas workspace"); AtlasCard { Text("Memory & conversations", fontWeight = FontWeight.Bold); Text("Search saved facts or start a fresh local chat.", color = Muted); OutlinedButton(onClick = { vm.navigate("Memory") }, enabled = !s.busy) { Text("Open memory") }; Text("Remote command execution will be added with the authenticated backend.", color = Muted) } }
+ Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) { Heading("A little more capable", "Tools for your Atlas workspace"); AtlasCard { Text("Memory & conversations", fontWeight = FontWeight.Bold); Text("Search saved facts or start a fresh local chat.", color = Muted); OutlinedButton(onClick = { vm.navigate("Memory") }, enabled = !s.busy) { Text("Open memory") }; Text("Remote command execution is not available in this version.", color = Muted) } }
 }

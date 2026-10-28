@@ -2,12 +2,27 @@
 import json
 import logging
 import os
+import threading
+import time
 
 from groq import Groq, RateLimitError, APIStatusError
 
 from backend.app.services import memory_service as memory
 
-client = Groq(api_key=os.environ["GROQ_API_KEY"])
+client = None
+_client_key = None
+_client_lock = threading.Lock()
+
+
+def get_client(api_key=None):
+    global client, _client_key
+    key = api_key or os.environ["GROQ_API_KEY"]
+    with _client_lock:
+        if client is None or key != _client_key:
+            client = Groq(api_key=key, timeout=25, max_retries=0)
+            _client_key = key
+        return client
+
 MODEL = os.getenv("MODEL", "openai/gpt-oss-120b")
 
 TOOLS = [
@@ -61,7 +76,7 @@ def trim(history: list, max_msgs: int = 24) -> list:
 def compact_memory() -> tuple[int, int, str]:
     """Rewrite memory.md via the model. Returns (old_len, new_len, new_text)."""
     current = memory.load_memory()
-    resp = client.chat.completions.create(
+    resp = get_client().chat.completions.create(
         model=MODEL,
         max_tokens=2000,
         messages=[{
@@ -79,7 +94,8 @@ def compact_memory() -> tuple[int, int, str]:
     return len(current), len(new), new
 
 
-def run(history: list, user_text: str) -> tuple[str, list]:
+def run(history: list, user_text: str, *, raise_errors: bool = False, groq_api_key: str | None = None) -> tuple[str, list]:
+    deadline = time.monotonic() + 75
     messages = (
         [{"role": "system", "content": build_system()}]  # rebuilt each turn
         + history
@@ -88,18 +104,26 @@ def run(history: list, user_text: str) -> tuple[str, list]:
 
     for _ in range(5):  # tool-loop guard
         try:
-            resp = client.chat.completions.create(
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError("Agent deadline exceeded")
+            resp = get_client(groq_api_key).chat.completions.create(
                 model=MODEL,
                 messages=messages,
                 tools=TOOLS,
                 tool_choice="auto",
                 max_tokens=1500,
                 temperature=0.6,
+                timeout=min(25, remaining),
             )
         except RateLimitError:
+            if raise_errors:
+                raise
             return "Rate limited by Groq. Wait a minute.", history
         except APIStatusError as e:
-            logging.exception("groq error")
+            if raise_errors:
+                raise
+            logging.error("Groq request failed with status %s", e.status_code)
             return f"Groq error {e.status_code}.", history
 
         msg = resp.choices[0].message
@@ -129,13 +153,14 @@ def run(history: list, user_text: str) -> tuple[str, list]:
         for tc in msg.tool_calls:
             try:
                 args = json.loads(tc.function.arguments)
-            except json.JSONDecodeError:
+            except (json.JSONDecodeError, TypeError):
                 status = "rejected: malformed arguments"
             else:
+                if not isinstance(args, dict):
+                    args = {}
                 if tc.function.name == "save_memory":
-                    status = memory.append_memory(
-                        args.get("section", ""), args.get("fact", "")
-                    )
+                    section, fact = args.get("section", ""), args.get("fact", "")
+                    status = memory.append_memory(section, fact) if isinstance(section, str) and isinstance(fact, str) else "rejected: invalid argument types"
                 else:
                     status = f"unknown tool: {tc.function.name}"
 
@@ -145,5 +170,7 @@ def run(history: list, user_text: str) -> tuple[str, list]:
                 "content": status,
             })
 
+    if raise_errors:
+        raise RuntimeError("Agent tool loop exceeded")
     return "Tool loop exceeded.", messages[1:]
 

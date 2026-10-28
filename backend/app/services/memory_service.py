@@ -1,5 +1,11 @@
 
 import os
+import hashlib
+import re
+import tempfile
+from contextlib import contextmanager
+from functools import wraps
+from filelock import FileLock
 import shutil
 import threading
 from datetime import datetime, timezone
@@ -16,10 +22,57 @@ BACKUP_DIR = DATA_DIR / "backups"
 SECTIONS = ["User Preferences", "Projects", "Decisions", "People"]
 MAX_MEMORY_CHARS = 12_000
 
-_lock = threading.Lock()
+_lock = threading.RLock()
 
 if USE_GITHUB:
     from backend.app.repositories import github_storage as storage
+
+
+@contextmanager
+def _storage_lock():
+    # Telegram and FastAPI can safely share a local DATA_DIR in separate processes.
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    with _lock, FileLock(str(DATA_DIR / ".memory.lock"), timeout=20):
+        yield
+
+
+def locked(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        with _storage_lock():
+            return fn(*args, **kwargs)
+    return wrapper
+
+
+def configure(data_dir: Path) -> None:
+    """Called once during API startup after environment configuration is loaded."""
+    global DATA_DIR, AGENT_FILE, MEMORY_FILE, BACKUP_DIR, USE_GITHUB, storage
+    DATA_DIR = Path(data_dir)
+    AGENT_FILE = DATA_DIR / "agent.md"
+    MEMORY_FILE = DATA_DIR / "memory.md"
+    BACKUP_DIR = DATA_DIR / "backups"
+    USE_GITHUB = bool(os.getenv("GH_REPO"))
+    if USE_GITHUB:
+        from backend.app.repositories import github_storage as storage
+
+
+def list_items() -> list[dict]:
+    """Stable content-based IDs survive file reloads and entry reordering."""
+    section = "Projects"
+    items = []
+    seen = set()
+    for line in load_memory().splitlines():
+        if line.startswith("## "):
+            section = line[3:].strip()
+        elif line.startswith("- ") and section in SECTIONS:
+            fact = re.sub(r"\s+_\d{4}-\d{2}-\d{2}_$", "", line[2:]).strip()
+            if not fact:
+                continue
+            identifier = hashlib.sha256(f"{section}\0{fact.casefold()}".encode()).hexdigest()
+            if identifier not in seen:
+                items.append(dict(id=identifier, section=section, fact=fact))
+                seen.add(identifier)
+    return items
 
 
 # ---------------------------------------------------------------- backends
@@ -34,9 +87,18 @@ def _write(name: str, text: str, message: str = "update") -> None:
     if USE_GITHUB:
         storage.write(name, text, message)
     else:
-        (DATA_DIR / name).write_text(text, encoding="utf-8")
+        temp_name = None
+        try:
+            with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=DATA_DIR, delete=False) as handle:
+                temp_name = handle.name
+                handle.write(text)
+            os.replace(temp_name, DATA_DIR / name)
+        finally:
+            if temp_name and os.path.exists(temp_name):
+                os.unlink(temp_name)
 
 
+@locked
 def ensure_files() -> None:
     """Create the storage layout on first boot; seed files win only once."""
     if USE_GITHUB:
@@ -53,10 +115,12 @@ def ensure_files() -> None:
             shutil.copy(seed, target)
 
 
+@locked
 def load_agent() -> str:
     return _read("agent.md")
 
 
+@locked
 def load_memory() -> str:
     return _read("memory.md")
 
@@ -65,7 +129,7 @@ def _backup() -> None:
     """Local mode only — git history covers the GitHub backend."""
     if USE_GITHUB:
         return
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S-%f")
     shutil.copy(MEMORY_FILE, BACKUP_DIR / f"memory-{stamp}.md")
     old = sorted(BACKUP_DIR.glob("memory-*.md"))[:-30]
     for f in old:
@@ -74,6 +138,7 @@ def _backup() -> None:
 
 # ---------------------------------------------------------------- writes
 
+@locked
 def append_memory(section: str, fact: str) -> str:
     """Append one bullet under a heading. Returns a status string for the model."""
     fact = " ".join(fact.split())
@@ -93,7 +158,6 @@ def append_memory(section: str, fact: str) -> str:
         if len(text) > MAX_MEMORY_CHARS:
             return "rejected: memory full, user must run /compact"
 
-        _backup()
         entry = f"- {fact}  _{datetime.now(timezone.utc):%Y-%m-%d}_"
         heading = f"## {section}"
         lines = text.splitlines()
@@ -109,11 +173,15 @@ def append_memory(section: str, fact: str) -> str:
         else:
             text = f"{text.rstrip()}\n\n{heading}\n{entry}\n"
 
+        if len(text) > MAX_MEMORY_CHARS:
+            return "rejected: memory full, user must run /compact"
+        _backup()
         _write("memory.md", text, f"remember: {fact[:50]}")
 
     return "saved"
 
 
+@locked
 def overwrite_memory(new_text: str) -> None:
     with _lock:
         _backup()

@@ -1,7 +1,15 @@
-# Cloudflare connectivity (planned)
+# HTTPS access for the Atlas API
 
-The Android client requires authenticated HTTPS. Before creating a tunnel, implement the API described in ../../docs/api.md, enforce bearer-token checks on every endpoint (including health), and keep Groq and Telegram keys on the server.
+Start the API locally with `python -m backend.app` and verify `python -m backend.healthcheck`. Its default bind is http://127.0.0.1:8000. Every data route requires the separate ATLAS_API_TOKEN bearer credential.
 
-No tunnel is configured by this change. The FastAPI app is a scaffold with no data endpoints. Do not expose it as a working Atlas API yet. When implemented, bind the local server to loopback and tunnel to it; configure your own hostname in the Android connection screen. Cloudflare Access service-token headers are not implemented by the Android client.
+For a temporary development URL, install cloudflared for your platform, then run in another terminal:
 
-See Cloudflare's current official documentation when setting up a named tunnel: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/ .
+```sh
+cloudflared tunnel --url http://127.0.0.1:8000
+```
+
+Use the resulting `https://...trycloudflare.com` URL in Android's Server URL field. Enter your ATLAS_API_TOKEN in the app's Atlas access-token field. The tunnel provides HTTPS; the API validates the bearer token. Keep the API and cloudflared processes running. A Quick Tunnel URL is temporary and may change on restart; it is not a configured permanent deployment.
+
+For a stable hostname, follow [Cloudflare's named tunnel setup](https://developers.cloudflare.com/tunnel/get-started/), with the origin set to http://127.0.0.1:8000. This change does not create a Cloudflare account, DNS record, tunnel, or running service for you. Cloudflare Access service-token headers are not implemented in the current Android client.
+
+Official [Quick Tunnel documentation](https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/).

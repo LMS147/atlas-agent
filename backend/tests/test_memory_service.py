@@ -3,6 +3,8 @@ import importlib
 import os
 from pathlib import Path
 import tempfile
+import subprocess
+import sys
 import unittest
 from unittest.mock import patch
 
@@ -36,6 +38,21 @@ class MemoryServiceTests(unittest.TestCase):
         self.assertIn("too long", self.memory.append_memory("Projects", "x" * 301))
         self.assertEqual("saved", self.memory.append_memory("unknown", "A fact"))
         self.assertIn("## Projects", self.memory.load_memory())
+
+    def test_separate_processes_do_not_lose_memory_writes(self):
+        code = (
+            "import sys; from backend.app.services import memory_service as memory; "
+            "memory.ensure_files(); "
+            "assert memory.append_memory('Projects', sys.argv[1]) == 'saved'"
+        )
+        facts = [f"Concurrent process fact {number}" for number in range(4)]
+        processes = [subprocess.Popen([sys.executable, "-c", code, fact]) for fact in facts]
+        for process in processes:
+            self.assertEqual(0, process.wait(timeout=15))
+        text = self.memory.load_memory()
+        for fact in facts:
+            self.assertEqual(1, text.count(fact))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -11,6 +11,6 @@ class PackageImportTests(unittest.TestCase):
             self.assertTrue(callable(bot.main))
             self.assertTrue(callable(bot.agent.run))
 
-    def test_api_scaffold_exposes_no_data_routes(self):
+    def test_android_api_routes_are_registered(self):
         app = importlib.import_module("backend.app.main").app
-        self.assertEqual([], app.routes)
+        self.assertTrue({"/api/v1/health", "/api/v1/chat", "/api/v1/memory", "/api/v1/agent", "/api/v1/files"}.issubset({route.path for route in app.routes}))

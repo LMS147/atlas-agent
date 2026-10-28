@@ -44,6 +44,6 @@ import com.atlas.ai.ui.theme.*
   item { OutlinedTextField(value = token, onValueChange = { token = it }, label = { Text("Atlas access token") }, visualTransformation = PasswordVisualTransformation(), singleLine = true, enabled = !busy, modifier = Modifier.fillMaxWidth()) }
   item { Row(verticalAlignment = Alignment.CenterVertically) { Switch(checked = remember, onCheckedChange = { remember = it }, enabled = !busy); Spacer(Modifier.width(12.dp)); Text("Remember this server securely") } }
   item { Button(onClick = { vm.connect(url, token, remember) }, enabled = !busy && url.isNotBlank() && token.isNotBlank(), modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("Connect") } }
-  item { Text("The FastAPI backend is the next phase. Use demo mode to explore the app now.", color = Muted); TextButton(enabled = !busy, onClick = vm::demo) { Text("Explore demo instead") } }
+  item { Text("Start your Atlas API and enter its HTTPS URL and access token. You can also explore demo mode.", color = Muted); TextButton(enabled = !busy, onClick = vm::demo) { Text("Explore demo instead") } }
  }
 }
