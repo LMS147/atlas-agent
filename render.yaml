@@ -5,8 +5,8 @@ services:
     name: atlas-agent
     runtime: python
     plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: python bot.py
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: python -m backend.telegram.bot
     envVars:
       - key: PYTHON_VERSION
         value: "3.12"
@@ -24,3 +24,4 @@ services:
         sync: false          # fine-grained PAT, Contents: read+write on that repo
       - key: WEBHOOK_SECRET
         sync: false          # any long random string: letters, digits, _ or - ONLY
+

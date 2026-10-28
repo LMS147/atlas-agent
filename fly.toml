@@ -3,6 +3,7 @@ app = "atlas-agent"
 primary_region = "jnb"
 
 [build]
+  dockerfile = "deployment/Dockerfile"
 
 [mounts]
   source = "agent_data"
@@ -13,4 +14,5 @@ primary_region = "jnb"
   MODEL = "llama-3.3-70b-versatile"
 
 [processes]
-  bot = "python bot.py"
+  bot = "python -m backend.telegram.bot"
+

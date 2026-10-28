@@ -6,8 +6,8 @@ services:
     name: atlas-agent
     runtime: python
     plan: starter
-    buildCommand: pip install -r requirements.txt
-    startCommand: python bot.py
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: python -m backend.telegram.bot
     disk:
       name: agent-data
       mountPath: /data
@@ -25,3 +25,4 @@ services:
         sync: false
       - key: ALLOWED_USER_IDS
         sync: false
+
