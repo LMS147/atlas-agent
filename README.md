@@ -31,7 +31,7 @@ Start the existing Telegram agent from the repository root with `python -m backe
 
 ## Status
 
-This change reorganizes the existing project and adds the first Android frontend. FastAPI routes, persistent server sessions, automation, file editing, monitoring metrics, tunnel configuration, and the Termux API service are not implemented. Reserved directories are intentionally tracked placeholders. Android compilation and device behavior must be validated by CI/Android Studio; a successful local source check is not an APK build.
+This change reorganizes the existing project and adds the first Android frontend. FastAPI routes, persistent server sessions, automation, file editing, monitoring metrics, tunnel configuration, and the Termux API service are not implemented. Reserved directories are intentionally tracked placeholders. Android CI has passed the unit tests and debug APK build; the `atlas-debug-apk` artifact is available in [this Actions run](https://github.com/LMS147/atlas-agent/actions/runs/40656515106). Backend CI passed all five migration tests. Device rendering and live API integration remain unverified.
 
 Secrets stay in environment configuration. Android stores only an Atlas access token with Keystore encryption; Groq keys remain on the backend. Do not commit runtime data, credentials, or signing keys.
 

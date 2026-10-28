@@ -10,7 +10,7 @@ cd android
 ```
 
 Windows: `cd android` then `.\gradlew.bat testDebugUnitTest assembleDebug`.
-CI runs the build and publishes an `atlas-debug-apk` artifact when successful. No Android build was verified in the authoring environment because an Android SDK was unavailable.
+CI runs the build and publishes an `atlas-debug-apk` artifact when successful. The Android debug build and unit tests passed in [GitHub Actions](https://github.com/LMS147/atlas-agent/actions/runs/40656515106). Download the `atlas-debug-apk` artifact from that run. Device rendering and live API integration remain unverified.
 
 ## Existing Telegram agent
 

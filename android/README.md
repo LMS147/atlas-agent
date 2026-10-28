@@ -67,7 +67,9 @@ app/src/main/java/com/atlas/ai/
 
 ## Verification status
 
-Source structure, XML, wrapper archive, and packaging checked in the creation environment. Android SDK and Gradle were not preinstalled, so compilation, unit tests, emulator rendering, Keystore behavior on-device, and live integration have **not** been verified. Run the build command above before treating this as a verified application. No APK is supplied.
+GitHub Actions successfully ran `testDebugUnitTest assembleDebug` after the monorepo/package refactor. The resulting debug APK is available as the `atlas-debug-apk` artifact in [the verified Android CI run](https://github.com/LMS147/atlas-agent/actions/runs/40656515106).
+
+Emulator rendering, Android Keystore behavior on-device, and live FastAPI/Groq integration have not been verified. The API is still a scaffold, so use demo mode.
 
 ## Next phase
 
