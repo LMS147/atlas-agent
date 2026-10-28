@@ -78,7 +78,7 @@ app/src/main/java/com/atlas/ai/
 
 Pending sends are converted to recoverable messages when reconnecting after an app restart. Check for an unresolved reply before composing the next turn. Cached failure state survives restarts. Retrying a completed send is a no-op; replies have deterministic local IDs so recovery does not create duplicate bubbles. Network failures never become demo responses.
 
-Room schema version 2 adds delivery metadata with a migration from version 1; it does not destructively reset existing chat or memory. The database is still app-private SQLite. Clearing local chat still does not reset the server conversation.
+Room schema version 2 adds delivery metadata with a migration from version 1; it does not destructively reset existing chat or memory. In-place Android updates require the same signing key; keep your original signing key when upgrading an installed debug build. A differently signed APK cannot perform that in-place update. The database is still app-private SQLite. Clearing local chat still does not reset the server conversation.
 
 ## Verification status
 

@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.*
 import retrofit2.HttpException
 
 class AtlasViewModel(app: Application) : AndroidViewModel(app) {
- private val db = Room.databaseBuilder(app, AtlasDatabase::class.java, "atlas.db").addMigrations(AtlasDatabase.MIGRATION_1_2).build()
+ private val db = AtlasDatabase.getInstance(app)
  private val repo: AtlasRepository = DefaultAtlasRepository(db.dao())
  private val sendMessage = SendMessage(repo)
  private val secure = SecureStore(app)
@@ -78,5 +78,4 @@ class AtlasViewModel(app: Application) : AndroidViewModel(app) {
  fun clearChat() = task { repo.clearChat() }
  fun toggleTimestamps() { _state.update { it.copy(timestamps = !it.timestamps) } }
  fun disconnect() = task { secure.clear(); repo.useDemo(); messagesJob?.cancel(); memoryJob?.cancel(); _state.value = UiState(screen = "Server setup", busy = true) }
- override fun onCleared() { super.onCleared(); db.close() }
 }
