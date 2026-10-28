@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.room.Room
+import com.atlas.ai.core.network.ApiFactory
 import com.atlas.ai.core.database.AtlasDatabase
 import com.atlas.ai.core.security.SecureStore
 import com.atlas.ai.data.repository.DefaultAtlasRepository
