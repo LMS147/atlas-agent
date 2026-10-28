@@ -60,7 +60,7 @@ import com.atlas.ai.feature.settings.*
    }
   }) {
    Scaffold(containerColor = Navy, topBar = {
-    if (!onboarding) TopAppBar(title = { Column { Text(if(s.screen == "Chat") "Atlas" else s.screen, fontWeight = FontWeight.Bold); Text(if(s.demo) "DEMO MODE · LOCAL PREVIEW" else "ATLAS API · HTTPS", color = Cyan, fontSize = 10.sp, letterSpacing = 1.sp) } }, navigationIcon = {
+    if (!onboarding) TopAppBar(title = { Column { Text(if(s.screen == "Chat") "Atlas" else s.screen, fontWeight = FontWeight.Bold); Text(if(s.demo) "DEMO MODE · LOCAL PREVIEW" else s.connectionStatus.uppercase(), color = Cyan, fontSize = 10.sp, letterSpacing = 1.sp) } }, navigationIcon = {
      IconButton(enabled = !s.busy, onClick = { scope.launch { drawer.open() } }) { Icon(Icons.Default.Menu, "Open navigation") }
     }, actions = { if(s.screen == "Server status" || s.screen == "Memory") IconButton(enabled = !s.busy, onClick = { vm.navigate(s.screen) }) { Icon(Icons.Default.Refresh, "Refresh") } })
    }) { padding ->

@@ -28,7 +28,10 @@ Pinned toolchain: Gradle 8.11.1, Android Gradle Plugin 8.9.2, Kotlin/Compose com
 
 - Welcome and server setup screens; demo mode with explicit labels.
 - Material 3 dark theme, blue/cyan branding, navigation drawer, quick actions.
-- Chat composer, local history, timestamps, loading and error states.
+- Live authenticated HTTPS chat with the FastAPI/Groq backend.
+- Room-backed delivery states, waiting indicators, timestamps, and failed-message recovery.
+- Same-request reply recovery after dropped connections; explicit confirmation for a fresh resend.
+- An upgrade migration preserves existing local chat and memories.
 - Searchable memory, section filtering, and manual memory creation.
 - Read-only agent profile and file listing; server health refresh.
 - Settings, local chat clearing confirmation, disconnect/credential removal.
@@ -65,9 +68,21 @@ app/src/main/java/com/atlas/ai/
   ui/theme/              Common colors and components
 ```
 
+## Real chat and recovery
+
+1. Start your configured API and HTTPS tunnel as described in ../docs/setup.md.
+2. Enter the HTTPS server URL and Atlas access token on Server setup. The app checks authenticated health before switching workspaces.
+3. Send a message (maximum 8,000 characters). The user message is saved before the request, and the actual server reply is cached after success.
+4. If the connection drops, choose **Check for reply** on that message. The app reuses its original UUID and conversation ID, letting the backend return its cached result without re-running the agent. It does not retry automatically.
+5. Explicit backend failures show **Send again…**, which asks for confirmation before creating a new request UUID. The previous request may have saved a memory before failing; inspect the conversation/memory first.
+
+Pending sends are converted to recoverable messages when reconnecting after an app restart. Check for an unresolved reply before composing the next turn. Cached failure state survives restarts. Retrying a completed send is a no-op; replies have deterministic local IDs so recovery does not create duplicate bubbles. Network failures never become demo responses.
+
+Room schema version 2 adds delivery metadata with a migration from version 1; it does not destructively reset existing chat or memory. The database is still app-private SQLite. Clearing local chat still does not reset the server conversation.
+
 ## Verification status
 
-GitHub Actions successfully ran `testDebugUnitTest assembleDebug` after the monorepo/package refactor. The resulting debug APK is available as the `atlas-debug-apk` artifact in [the verified Android CI run](https://github.com/LMS147/atlas-agent/actions/runs/40656515106).
+GitHub Actions runs `testDebugUnitTest assembleDebug` and publishes `atlas-debug-apk`. Tests now include real Retrofit/OkHttp requests to a certificate-trusted local HTTPS server, delivery/recovery behavior, and an actual Room version-1-to-2 migration under Robolectric. Check the latest [Android workflow](https://github.com/LMS147/atlas-agent/actions/workflows/android-ci.yml) for the current APK and build result.
 
 Emulator rendering, Android Keystore behavior on-device, and live FastAPI/Groq integration have not been verified. The API is covered by mocked-provider and local HTTP integration tests; a real Groq account and external tunnel still need end-to-end verification.
 

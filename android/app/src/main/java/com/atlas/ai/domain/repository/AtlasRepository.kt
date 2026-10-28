@@ -16,6 +16,7 @@ interface AtlasRepository {
  suspend fun seed()
  suspend fun refreshMemory()
  suspend fun send(text: String)
+ suspend fun retry(id: String, newRequest: Boolean = false)
  suspend fun remember(section: String, fact: String)
  suspend fun profile(): AgentProfile
  suspend fun files(): List<FileItem>

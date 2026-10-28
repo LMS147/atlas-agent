@@ -31,7 +31,7 @@ Start the existing Telegram agent from the repository root with `python -m backe
 
 ## Status
 
-The Android frontend and API share a working contract: authenticated health, Groq-backed chat, memory list/create, agent profile, and read-only file listing. API conversation context and duplicate-request responses persist in SQLite. Markdown memory stays compatible with Telegram. Configure backend/.env and run `python -m backend.app`; see the setup guide for HTTPS access and Termux helpers.
+Android live chat now includes durable delivery status, waiting indicators, safe reply recovery, and confirmed resends. Existing local history is preserved by a Room migration. The Android frontend and API share a working contract: authenticated health, Groq-backed chat, memory list/create, agent profile, and read-only file listing. API conversation context and duplicate-request responses persist in SQLite. Markdown memory stays compatible with Telegram. Configure backend/.env and run `python -m backend.app`; see the setup guide for HTTPS access and Termux helpers.
 
 Task automation, file editing/downloads, hardware monitoring, multi-user accounts, and permanent tunnel/boot setup remain future work. Android CI builds the debug APK. Backend tests cover authentication, persistence, concurrency, provider errors, model-tool memory saves, and local HTTP startup using mocked provider responses. Real Groq/tunnel/device integration requires your configured server and credentials.
 

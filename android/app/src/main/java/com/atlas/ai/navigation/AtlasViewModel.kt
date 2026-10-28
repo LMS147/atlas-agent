@@ -4,7 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.room.Room
-import com.atlas.ai.core.network.ApiFactory
+import com.atlas.ai.core.network.*
 import com.atlas.ai.core.database.AtlasDatabase
 import com.atlas.ai.core.security.SecureStore
 import com.atlas.ai.data.repository.DefaultAtlasRepository
@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.*
 import retrofit2.HttpException
 
 class AtlasViewModel(app: Application) : AndroidViewModel(app) {
- private val db = Room.databaseBuilder(app, AtlasDatabase::class.java, "atlas.db").build()
+ private val db = Room.databaseBuilder(app, AtlasDatabase::class.java, "atlas.db").addMigrations(AtlasDatabase.MIGRATION_1_2).build()
  private val repo: AtlasRepository = DefaultAtlasRepository(db.dao())
  private val sendMessage = SendMessage(repo)
  private val secure = SecureStore(app)
@@ -25,29 +25,32 @@ class AtlasViewModel(app: Application) : AndroidViewModel(app) {
  val state = _state.asStateFlow()
  private var messagesJob: Job? = null
  private var memoryJob: Job? = null
- init { viewModelScope.launch { try { secure.load()?.let { connect(it.first, it.second, true) } } catch (e: Exception) { _state.update { it.copy(screen = "Server setup", error = "Saved credentials could not be restored. Enter them again.") } } } }
+ init { viewModelScope.launch { try { secure.load()?.let { saved -> _state.update { it.copy(screen = "Server setup", serverUrl = saved.first) }; connect(saved.first, saved.second, true) } } catch (e: Exception) { _state.update { it.copy(screen = "Server setup", error = "Saved credentials could not be restored. Enter them again.") } } } }
  private fun observe() {
   messagesJob?.cancel(); memoryJob?.cancel()
   _state.update { it.copy(messages = emptyList(), memories = emptyList(), profile = AgentProfile(), files = emptyList(), health = null) }
   messagesJob = viewModelScope.launch { repo.messages().collect { rows -> _state.update { it.copy(messages = rows) } } }
   memoryJob = viewModelScope.launch { repo.memories().collect { rows -> _state.update { it.copy(memories = rows) } } }
  }
- private fun task(block: suspend () -> Unit) {
+ private fun task(draft: String? = null, block: suspend () -> Unit) {
   if (_state.value.busy) return
+  _state.update { it.copy(busy = true, error = null, restoredDraft = null) }
   viewModelScope.launch {
-   _state.update { it.copy(busy = true, error = null) }
    try { block() } catch (e: CancellationException) { throw e } catch (e: Exception) {
-    val message = when (e) { is HttpException -> "Server returned HTTP ${e.code()}. Check the API and access token."; is java.io.IOException -> "Cannot reach Atlas. Check your connection and tunnel, then try again."; is IllegalArgumentException -> e.message ?: "Check the supplied values."; else -> "The operation failed. Check server compatibility and try again." }
-    _state.update { it.copy(error = message) }
+    _state.update { it.copy(
+     error = ChatErrors.message(e),
+     restoredDraft = if (e is MessageNotSavedException) draft else null,
+     connectionStatus = if(e is java.io.IOException) "Connection issue" else if(e is HttpException && e.code() == 401) "Authentication required" else it.connectionStatus
+    ) }
    } finally { _state.update { it.copy(busy = false) } }
   }
  }
- fun demo() = task { repo.useDemo(); observe(); repo.seed(); _state.update { it.copy(screen = "Chat", demo = true) } }
+ fun demo() = task { repo.useDemo(); observe(); repo.seed(); _state.update { it.copy(screen = "Chat", demo = true, connectionStatus = "Demo mode", serverUrl = "") } }
  fun connect(url: String, token: String, remember: Boolean) = task {
   val normalized = ApiFactory.normalize(url)
   repo.connect(normalized, token.trim())
   observe()
-  _state.update { it.copy(screen = "Chat", demo = false) }
+  _state.update { it.copy(screen = "Chat", demo = false, serverUrl = normalized, connectionStatus = "Connected · HTTPS") }
   if (remember) secure.save(normalized, token.trim()) else secure.clear()
  }
  fun navigate(screen: String) {
@@ -60,7 +63,17 @@ class AtlasViewModel(app: Application) : AndroidViewModel(app) {
    "Server status" -> task { val health = repo.health(); _state.update { it.copy(health = health) } }
   }
  }
- fun send(text: String) { if (text.isNotBlank()) task { sendMessage(text) } }
+ fun send(text: String): Boolean {
+  if (_state.value.busy || text.isBlank() || text.trim().length > 8000) return false
+  if (_state.value.messages.any { it.role == "user" && it.delivery == com.atlas.ai.domain.model.DeliveryStatus.RETRYABLE }) return false
+  task(draft = text) { sendMessage(text); _state.update { it.copy(connectionStatus = if(it.demo) "Demo mode" else "Connected · HTTPS") } }
+  return true
+ }
+ fun retry(id: String, newRequest: Boolean = false) = task {
+  repo.retry(id, newRequest)
+  _state.update { it.copy(connectionStatus = if(it.demo) "Demo mode" else "Connected · HTTPS") }
+ }
+ fun consumeRestoredDraft() { _state.update { it.copy(restoredDraft = null) } }
  fun remember(section: String, fact: String) { if (fact.isNotBlank()) task { repo.remember(section, fact.trim().take(300)) } }
  fun clearChat() = task { repo.clearChat() }
  fun toggleTimestamps() { _state.update { it.copy(timestamps = !it.timestamps) } }

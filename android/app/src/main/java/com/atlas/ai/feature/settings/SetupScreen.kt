@@ -37,7 +37,7 @@ import kotlinx.coroutines.launch
 import com.atlas.ai.ui.theme.*
 
 @Composable internal fun Setup(vm: AtlasViewModel, busy: Boolean) {
- var url by rememberSaveable { mutableStateOf("") }; var token by remember { mutableStateOf("") }; var remember by rememberSaveable { mutableStateOf(true) }
+ var url by rememberSaveable { mutableStateOf(vm.state.value.serverUrl) }; var token by remember { mutableStateOf("") }; var remember by rememberSaveable { mutableStateOf(true) }
  LazyColumn(Modifier.fillMaxSize().imePadding().padding(24.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
   item { AtlasMark(); Spacer(Modifier.height(24.dp)); Heading("Connect to Atlas", "Enter your authenticated HTTPS endpoint. Your Groq key stays on the server.") }
   item { OutlinedTextField(value = url, onValueChange = { url = it }, label = { Text("Server URL") }, placeholder = { Text("https://atlas.example.com") }, singleLine = true, enabled = !busy, modifier = Modifier.fillMaxWidth()) }

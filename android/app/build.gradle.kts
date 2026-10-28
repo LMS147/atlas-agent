@@ -7,8 +7,9 @@ plugins {
 android {
  namespace = "com.atlas.ai"
  compileSdk = 35
- defaultConfig { applicationId = "com.atlas.ai"; minSdk = 26; targetSdk = 35; versionCode = 1; versionName = "0.1.0"; testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner" }
+ defaultConfig { applicationId = "com.atlas.ai"; minSdk = 26; targetSdk = 35; versionCode = 2; versionName = "0.2.0"; testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner" }
  buildFeatures { compose = true }
+ testOptions { unitTests.isIncludeAndroidResources = true }
  compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
  kotlinOptions { jvmTarget = "17" }
 }
@@ -28,4 +29,8 @@ dependencies {
  implementation("com.squareup.retrofit2:converter-gson:2.11.0")
  implementation("com.squareup.okhttp3:okhttp:4.12.0")
  testImplementation("junit:junit:4.13.2")
+ testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+ testImplementation("com.squareup.okhttp3:okhttp-tls:4.12.0")
+ testImplementation("org.robolectric:robolectric:4.14.1")
+ testImplementation("androidx.test:core:1.6.1")
 }

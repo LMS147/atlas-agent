@@ -17,9 +17,9 @@ object ApiFactory {
   }
   return url.toString().trimEnd('/') + "/"
  }
- fun create(url: String, token: String): AtlasApi {
+ fun create(url: String, token: String, baseClient: OkHttpClient = OkHttpClient()): AtlasApi {
   require(token.isNotBlank() && token.none { it == '\r' || it == '\n' }) { "Enter a valid Atlas access token" }
-  val client = OkHttpClient.Builder().connectTimeout(15, TimeUnit.SECONDS).readTimeout(90, TimeUnit.SECONDS)
+  val client = baseClient.newBuilder().connectTimeout(15, TimeUnit.SECONDS).readTimeout(90, TimeUnit.SECONDS)
    .callTimeout(100, TimeUnit.SECONDS).followRedirects(false).followSslRedirects(false)
    .retryOnConnectionFailure(false).addInterceptor { chain ->
     chain.proceed(chain.request().newBuilder().header("Authorization", "Bearer $token").build())

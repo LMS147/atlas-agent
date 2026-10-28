@@ -43,7 +43,7 @@ import com.atlas.ai.ui.theme.*
   AtlasCard { Text("Server", fontWeight = FontWeight.Bold); Text(if(s.demo) "Demo mode · no server connected" else "Authenticated HTTPS connection", color = Muted); OutlinedButton(enabled = !s.busy, onClick = { vm.navigate("Server setup") }) { Text("Change server") } }
   AtlasCard { Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) { Text("Show timestamps"); Switch(s.timestamps, { vm.toggleTimestamps() }) }; Text("Conversations are cached on this device.", color = Muted); TextButton(enabled = !s.busy, onClick = { clear = true }) { Text("Clear local chat") } }
   TextButton(enabled = !s.busy, onClick = vm::disconnect) { Text("Disconnect & forget credentials") }
-  Text("Atlas for Android · 0.1.0\nFrontend foundation", color = Muted, fontSize = 12.sp)
+  Text("Atlas for Android · 0.2.0\nPersonal AI companion", color = Muted, fontSize = 12.sp)
  }
  if(clear) AlertDialog(onDismissRequest = { clear = false }, title = { Text("Clear local chat?") }, text = { Text("This removes this workspace’s chat cache from this device. Server conversation history and memories remain on the server.") }, confirmButton = { TextButton(onClick = { vm.clearChat(); clear = false }) { Text("Clear") } }, dismissButton = { TextButton(onClick = { clear = false }) { Text("Cancel") } })
 }

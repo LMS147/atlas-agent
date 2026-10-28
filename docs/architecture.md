@@ -5,7 +5,7 @@
 Android: Kotlin + Jetpack Compose + Material 3, MVVM, repository interface, Retrofit/OkHttp, Room, Android Keystore. The app ID and namespace are `com.atlas.ai`. This changes the starter's earlier `com.atlas.app` identifier; it installs as a separate app from any build using that old ID.
 
 - `core/network`: HTTPS URL validation and Retrofit construction.
-- `core/database`: Room database and DAO.
+- `core/database`: Room database/DAO and a non-destructive v1-to-v2 delivery-state migration.
 - `core/security`: encrypted credential storage.
 - `core/datastore`: reserved for future persistent UI preferences.
 - `data/remote`, `data/local`, `data/model`, `data/repository`: API interface, entities, wire models, and repository implementation.
@@ -15,6 +15,12 @@ Android: Kotlin + Jetpack Compose + Material 3, MVVM, repository interface, Retr
 - `ui/theme`: common colors, branding, and components.
 
 Backend: the existing Groq agent, memory service, GitHub storage, Telegram transport, and seed files have moved into Python packages. All runtime imports use `backend.*`; launch from the repository root. This avoids the `backend/telegram` folder shadowing the external `telegram` library. Local memory continues to use `DATA_DIR`, defaulting to `./data` relative to the process working directory. Seed lookup is now relative to the relocated backend package.
+
+## Android live chat
+
+The repository validates authenticated health before entering a live workspace and posts messages to /api/v1/chat through Retrofit/OkHttp. The Room cache tracks pending, sent, recoverable, and failed delivery. Reply recovery reuses the original UUID; a fresh resend requires user confirmation. The UI shows the actual configured server and connection/request state, never fabricated online status or demo replies on a failed live request.
+
+A process restart leaves uncertain requests recoverable rather than automatically replaying them. A mutex serializes repository send/recovery operations. Deterministic reply IDs and a transactional cache completion avoid duplicate bubbles. Version 2 preserves the existing cache with an explicit migration; message upserts retain ordering.
 
 ## API and persistence
 

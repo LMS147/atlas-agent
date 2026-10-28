@@ -44,7 +44,7 @@ Open `android/` in Android Studio with JDK 17 and SDK 35. Build/run on Android 8
 
 Use the HTTPS URL of your tunnel as **Server URL** and the same `ATLAS_API_TOKEN` as **Atlas access token**. Android rejects plain HTTP. The server can remain on loopback HTTP behind the HTTPS tunnel. See [Cloudflare instructions](../deployment/cloudflare/README.md). Demo mode remains available without a server.
 
-Verify the complete flow: connect, send a message, create a memory, reopen the app, then restart the API and send another message in the same conversation. SQLite preserves server context; Room preserves the app's local history.
+Verify the complete flow: connect, send a message, create a memory, reopen the app, then restart the API and send another message in the same conversation. SQLite preserves server context; Room preserves the app's local history and delivery state. If a reply is interrupted, use **Check for reply** to recover it with the same request ID. **Send again…** creates a fresh request only after confirmation. The app never replaces a failed live request with a demo response.
 
 Build manually:
 
