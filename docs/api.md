@@ -102,7 +102,7 @@ Health now also includes the API process `pid` for the local supervisor's authen
 
 ### Files and memory management (v0.5)
 
-All endpoints below require the existing bearer token. `GET /files?directory=` lists the virtual root; `workspace` and `backups` list those folders. `agent.md`, `memory.md`, and backups are read-only through Files. Workspace files live in `DATA_DIR/workspace`, independently of GitHub-backed memory. Nested paths, hidden names, symlinks, credentials, databases, logs and arbitrary filesystem access are excluded.
+All endpoints below require the existing bearer token. `GET /files?directory=` lists the virtual root; `workspace` and `backups` list those folders. `agent.md`, `memory.md`, and backups are read-only through Files. Only Atlas-generated `memory-YYYYMMDD-HHMMSS-microseconds.md` snapshots are exposed from the backup directory. Workspace files live in `DATA_DIR/workspace`, independently of GitHub-backed memory. Nested paths, hidden names, symlinks, credentials, databases, logs and arbitrary filesystem access are excluded.
 
 - `POST /files/upload?name=notes.txt`: raw bytes, 5 MiB maximum, creates a new workspace file (201). Existing name returns 409; upload never overwrites.
 - `GET /files/content?path=workspace/notes.txt`: raw bytes (5 MiB maximum), SHA-256 ETag. Downloads are authenticated; no public file URLs.

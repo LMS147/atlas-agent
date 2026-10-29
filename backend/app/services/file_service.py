@@ -10,6 +10,7 @@ from backend.app.services import memory_service as memory
 
 MAX_BYTES = 5 * 1024 * 1024
 MAX_TEXT_BYTES = 256 * 1024
+BACKUP_NAME = re.compile(r"^memory-[0-9]{8}-[0-9]{6}-[0-9]{6}\.md$")
 NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._ -]{0,119}$")
 
 
@@ -30,6 +31,8 @@ def target(identifier, writing=False):
     elif len(parts) == 2 and parts[0] in ("workspace", "backups") and NAME.fullmatch(parts[1]):
         if parts[1] in (".", "..") or (parts[0] == "backups" and writing):
             raise HTTPException(403, "Read-only directory")
+        if parts[0] == "backups" and not BACKUP_NAME.fullmatch(parts[1]):
+            raise HTTPException(403, "Only Atlas memory snapshots are exposed")
         parent = workspace() if parts[0] == "workspace" else memory.BACKUP_DIR
         if parent.is_symlink():
             raise HTTPException(403, "Symlinks are not exposed")
@@ -65,7 +68,7 @@ def list_files(directory=""):
     if not parent.is_dir():
         raise HTTPException(404, "Directory not found")
     return [dict(name=p.name, path=f"{directory}/{p.name}", directory=False, size_bytes=p.stat().st_size, writable=directory == "workspace")
-            for p in sorted(parent.iterdir()) if not p.is_symlink() and p.is_file() and NAME.fullmatch(p.name)]
+            for p in sorted(parent.iterdir()) if not p.is_symlink() and p.is_file() and NAME.fullmatch(p.name) and (directory != "backups" or BACKUP_NAME.fullmatch(p.name))]
 
 
 def read(identifier):

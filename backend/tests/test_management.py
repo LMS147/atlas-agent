@@ -68,6 +68,14 @@ class ManagementTests(unittest.TestCase):
         with patch.object(files,'MAX_BYTES',4):
             self.assertEqual(413,self.client.post('/api/v1/files/upload?name=huge.bin',content=b'12345',headers=AUTH).status_code)
         self.assertFalse((self.root/'workspace/huge.bin').exists())
+        (self.root/'backups/private.log').write_text('private')
+        (self.root/'backups/atlas.sqlite3').write_text('database')
+        self.assertEqual([],self.client.get('/api/v1/files?directory=backups',headers=AUTH).json())
+        self.assertEqual(403,self.client.get('/api/v1/files/content?path=backups/private.log',headers=AUTH).status_code)
+        self.client.post('/api/v1/memory',json=dict(section='Projects',fact='Create a snapshot'),headers=AUTH)
+        snapshots=self.client.get('/api/v1/files?directory=backups',headers=AUTH).json()
+        self.assertEqual(1,len(snapshots))
+        self.assertEqual(200,self.client.get('/api/v1/files/content',params={'path':snapshots[0]['path']},headers=AUTH).status_code)
 
     def test_memory_edit_delete_and_stale_ids(self):
         item=self.client.post('/api/v1/memory',json=dict(section='Projects',fact='Original'),headers=AUTH).json()
