@@ -30,7 +30,16 @@ interface AtlasRepository {
  suspend fun retry(id: String, newRequest: Boolean = false)
  suspend fun remember(section: String, fact: String)
  suspend fun profile(): AgentProfile
- suspend fun files(): List<FileItem>
+ suspend fun files(directory: String = ""): List<FileItem>
+ suspend fun document(path: String): FileDocument
+ suspend fun download(path: String): ByteArray
+ suspend fun upload(name: String, bytes: ByteArray)
+ suspend fun editFile(path: String, content: String, revision: String)
+ suspend fun editMemory(id: String, section: String, fact: String)
+ suspend fun deleteMemory(id: String)
+ suspend fun compactPlan(): CompactPlan
+ suspend fun compact(revision: String)
+ suspend fun monitoring(): Monitoring
  suspend fun health(): Health
  suspend fun clearChat()
 }

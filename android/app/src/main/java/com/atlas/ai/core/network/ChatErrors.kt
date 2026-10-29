@@ -10,6 +10,8 @@ object ChatErrors {
    404 -> "Atlas API route was not found. Check the HTTPS server URL and backend version."
    409 -> "Atlas cannot safely replay this request. Check your conversation and memory before sending again."
    410 -> "This conversation was deleted on the server. Choose or create another chat."
+   413 -> "File is too large. Uploads/downloads support 5 MiB; the text editor supports 256 KiB."
+   415 -> "This is a binary file. Choose Download to open it with another app."
    422 -> "Atlas rejected the message format. Check the backend version and message length."
    429 -> {
     val seconds = error.response()?.headers()?.get("Retry-After")?.toLongOrNull()?.coerceIn(1,3600) ?: 30

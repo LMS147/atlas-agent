@@ -75,7 +75,7 @@ class ApiTests(unittest.TestCase):
             (self.root / ".env").write_text("SHOULD_NOT_BE_LISTED=secret")
             (self.root / "private.log").write_text("private")
             listing = client.get("/api/v1/files", headers=HEADERS).json()
-            self.assertEqual({"agent.md", "memory.md", "backups"}, {item["name"] for item in listing})
+            self.assertEqual({"agent.md", "memory.md", "backups", "workspace"}, {item["name"] for item in listing})
             for item in listing:
                 self.assertIn("directory", item)
                 self.assertIn("size_bytes", item)

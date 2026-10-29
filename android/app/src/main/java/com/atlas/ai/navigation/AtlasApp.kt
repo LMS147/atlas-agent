@@ -67,6 +67,7 @@ import com.atlas.ai.feature.settings.*
     Column(Modifier.fillMaxSize().padding(padding)) {
      if(s.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
      s.error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.fillMaxWidth().background(Panel).padding(16.dp)) }
+     s.notice?.let { Text(it, color = Cyan, modifier = Modifier.padding(16.dp)) }
      when(s.screen) {
       "Welcome" -> Welcome(vm, s.busy)
       "Server setup" -> Setup(vm, s.busy)

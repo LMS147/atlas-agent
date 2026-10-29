@@ -14,3 +14,8 @@ def health(request: Request, owner: Owner):
 @router.get("/agent", response_model=AgentProfile)
 def profile(owner: Owner):
     return AgentProfile(content=memory.load_agent())
+
+@router.get("/monitoring")
+def monitoring(request: Request, owner: Owner):
+    from backend.app.services.monitoring_service import snapshot
+    return snapshot(request.app)

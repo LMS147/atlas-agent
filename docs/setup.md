@@ -107,3 +107,13 @@ Deleting a conversation removes that chat's server messages and model context, w
 Update/restart the backend before installing Android v0.4. **Check for reply** now checks a read-only request-status endpoint and can restore a saved result without posting another AI request. Pending results stay recoverable. A missing record offers **Retry delivery…**, which keeps the original UUID after confirmation. Failed/interrupted attempts require confirmation for a fresh request; check saved memories first because a tool may have run before failure.
 
 The app displays Retry-After guidance for rate limits. Automatic new inference retries remain disabled. New requests require a known conversation on the server, so replacing DATA_DIR cannot silently reset an existing conversation. SQLite/Room histories and existing delivery IDs are preserved; this release adds a delivery-state value without changing the Room schema.
+
+### Files, memory and metrics (v0.5)
+
+Update the checkout and restart the API (`bash deployment/termux/service.sh restart`); install the matching Android APK. No new Python/native dependencies or database migration is required.
+
+In **Files**, choose **Upload**, select a document with Android's file picker, and choose an unused name (ASCII letters/numbers, spaces, dots, dashes or underscores, starting with a letter or number; 120 characters maximum). Files go into `DATA_DIR/workspace`; uploads/downloads are capped at 5 MiB. **Open text** reads UTF-8 files up to 256 KiB and permits editing workspace files. A conflicting edit requires reopening the latest version. **Download** uses Android's save picker, including for binary files; no broad storage permission is needed. Profile, canonical memory and backups stay read-only in Files. Downloads and local copies remain on your device after server-side changes.
+
+In **Memory**, edit facts, confirm deletion, or preview conservative compaction. Compaction only removes duplicate facts and excess blank lines; it will not make unique facts shorter. Local backups are retained (last 30) before changes. Use shorter facts or remove obsolete ones if unique memory still fills its limit.
+
+**Server status** shows real CPU, RAM, filesystem storage, device/API uptime and HTTP/service metrics, with ten-second foreground refreshes. Restricted Android metrics display Unavailable. Validate available metrics on the actual phone; Samsung firmware may restrict `/proc` differently from Linux CI.

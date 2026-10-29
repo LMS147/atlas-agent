@@ -16,5 +16,14 @@ interface AtlasApi {
  @GET("api/v1/memory") suspend fun memories(): List<MemoryItem>
  @POST("api/v1/memory") suspend fun remember(@Body request: MemoryRequest): MemoryItem
  @GET("api/v1/agent") suspend fun agent(): AgentProfile
- @GET("api/v1/files") suspend fun files(): List<FileItem>
+ @GET("api/v1/files") suspend fun files(@Query("directory") directory: String = ""): List<FileItem>
+ @GET("api/v1/files/text") suspend fun document(@Query("path") path: String): FileDocument
+ @GET("api/v1/files/content") suspend fun download(@Query("path") path: String): okhttp3.ResponseBody
+ @POST("api/v1/files/upload") suspend fun upload(@Query("name") name: String, @Body content: okhttp3.RequestBody): FileItem
+ @PUT("api/v1/files/text") suspend fun editFile(@Query("path") path: String, @Body body: FileEdit): FileItem
+ @PATCH("api/v1/memory/{id}") suspend fun editMemory(@Path("id") id: String, @Body body: MemoryRequest)
+ @DELETE("api/v1/memory/{id}") suspend fun deleteMemory(@Path("id") id: String)
+ @GET("api/v1/memory/compact") suspend fun compactPlan(): CompactPlan
+ @POST("api/v1/memory/compact") suspend fun compact(@Body body: CompactRequest): CompactPlan
+ @GET("api/v1/monitoring") suspend fun monitoring(): Monitoring
 }

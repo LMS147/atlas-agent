@@ -99,3 +99,20 @@ New Android clients send `require_existing:true` on chat requests. Missing conve
 Groq 429 responses now include a bounded Retry-After delay in seconds (1–3600; default 30 if unavailable/invalid). Android displays it and requires explicit resend confirmation; it does not automatically create new inference requests.
 
 Health now also includes the API process `pid` for the local supervisor's authenticated readiness check. It does not measure provider quota or external tunnel availability. An exclusive process lock is held for the API lifespan in DATA_DIR/.atlas-api.lock. Duplicate startups fail before memory/session initialization; OS process exit releases the lock. Use a single API worker. Termux supervision/boot setup is documented in ../deployment/termux/README.md.
+
+### Files and memory management (v0.5)
+
+All endpoints below require the existing bearer token. `GET /files?directory=` lists the virtual root; `workspace` and `backups` list those folders. `agent.md`, `memory.md`, and backups are read-only through Files. Workspace files live in `DATA_DIR/workspace`, independently of GitHub-backed memory. Nested paths, hidden names, symlinks, credentials, databases, logs and arbitrary filesystem access are excluded.
+
+- `POST /files/upload?name=notes.txt`: raw bytes, 5 MiB maximum, creates a new workspace file (201). Existing name returns 409; upload never overwrites.
+- `GET /files/content?path=workspace/notes.txt`: raw bytes (5 MiB maximum), SHA-256 ETag. Downloads are authenticated; no public file URLs.
+- `GET /files/text?path=workspace/notes.txt`: `{path,content,revision,writable}`, UTF-8 text up to 256 KiB. Binary files return 415 and should be downloaded.
+- `PUT /files/text?path=workspace/notes.txt`: `{content,revision}`; revision is the SHA-256 from opening the file. Stale saves return 409. Writes are atomic and confined to workspace files.
+- `PATCH /memory/{id}`: `{section,fact}` using the same section and 300-character fact rules as creation. Returns 204. Content IDs change after editing; stale IDs return 409.
+- `DELETE /memory/{id}`: 204; removes the fact from future agent context, leaving chat transcripts unchanged.
+- `GET /memory/compact`: preview `{revision,before_chars,after_chars,removed_entries}`.
+- `POST /memory/compact`: `{revision}` applies that preview, or returns 409 if memory changed. Conservative compaction removes normalized exact duplicate bullets within their section and repeated blank lines; it does not summarize, call an LLM, discard unique facts or strip unknown Markdown. Edits/deletes/compaction use the shared memory lock and local backups (last 30); GitHub mode uses commit history.
+
+### Monitoring (v0.5)
+
+`GET /monitoring` samples CPU for 0.2 seconds and returns `sampled_at` (Unix milliseconds), `device_cpu_percent`, `process_cpu_percent`, `ram` (`total_bytes`, `available_bytes`, `used_bytes`), `process_rss_bytes`, `storage` (`total_bytes`, `used_bytes`, `free_bytes`), `device_uptime_seconds`, `service` (`pid`, `uptime_seconds`, Python `threads`, `requests`, `errors`, `active_requests`), and `unavailable` labels. Process CPU counts 100% per core. Storage describes the data directory's filesystem, not the app's file sizes. Counters reset when the API process restarts, count all HTTP requests and 5xx responses, and include the monitoring request itself. Android may deny `/proc/stat`, `/proc/meminfo`, `/proc/uptime` or process RSS reads: affected values are null, never invented zeroes. The app refreshes every 10 seconds while this screen is visible and the app is in the foreground; failed refreshes retain the visibly dated last sample. These are API-process metrics, not claims about Cloudflare or Telegram service health.

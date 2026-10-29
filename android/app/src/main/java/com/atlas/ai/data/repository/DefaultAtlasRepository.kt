@@ -15,6 +15,8 @@ import com.atlas.ai.data.remote.AtlasApi
 import com.atlas.ai.domain.repository.AtlasRepository
 
 import java.util.UUID
+import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.MediaType.Companion.toMediaType
 import kotlinx.coroutines.flow.first
 import java.io.IOException
 
@@ -236,7 +238,25 @@ class DefaultAtlasRepository(
   else { remote.remember(MemoryRequest(section, fact)); refreshMemory() }
  }
  suspend override fun profile() = api?.agent() ?: AgentProfile(content = "I’m Atlas, your personal AI companion. I help with projects, learning, and automation.\n\nPersonality\nHelpful, honest, concise, and practical.\n\nDemo profile — the live identity will come from agent.md.")
- suspend override fun files() = api?.files() ?: listOf(FileItem("agent.md", "agent.md", false, 1254), FileItem("memory.md", "memory.md", false, 68), FileItem("backups", "backups", true))
+ suspend override fun files(directory: String) = api?.files(directory) ?: listOf(FileItem("agent.md", "agent.md", false, 1254), FileItem("memory.md", "memory.md", false, 68), FileItem("backups", "backups", true))
  suspend override fun health() = api?.health() ?: Health("demo", "Preview data", 0)
  suspend override fun clearChat() = dao.clearConversationMessages(scope,conversationId)
+
+ private fun live(): AtlasApi = requireNotNull(api) { "Connect your Atlas server to manage files, memory and metrics." }
+ override suspend fun document(path: String) = live().document(path)
+ override suspend fun download(path: String): ByteArray = live().download(path).use { body ->
+  val bytes = com.atlas.ai.core.network.BoundedFiles.read(body.byteStream(),5 * 1024 * 1024)
+  require(bytes.size <= 5 * 1024 * 1024) { "Download exceeds 5 MiB." }
+  bytes
+ }
+ override suspend fun upload(name: String, bytes: ByteArray) {
+  require(bytes.size <= 5 * 1024 * 1024) { "Uploads are limited to 5 MiB." }
+  live().upload(name,bytes.toRequestBody("application/octet-stream".toMediaType()))
+ }
+ override suspend fun editFile(path: String, content: String, revision: String) { live().editFile(path,FileEdit(content,revision)) }
+ override suspend fun editMemory(id: String, section: String, fact: String) { live().editMemory(id,MemoryRequest(section,fact)); refreshMemory() }
+ override suspend fun deleteMemory(id: String) { live().deleteMemory(id); refreshMemory() }
+ override suspend fun compactPlan() = live().compactPlan()
+ override suspend fun compact(revision: String) { live().compact(CompactRequest(revision)); refreshMemory() }
+ override suspend fun monitoring() = live().monitoring()
 }

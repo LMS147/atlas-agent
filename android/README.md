@@ -33,8 +33,9 @@ Pinned toolchain: Gradle 8.11.1, Android Gradle Plugin 8.9.2, Kotlin/Compose com
 - Room-backed delivery states, waiting indicators, timestamps, and failed-message recovery.
 - Same-request reply recovery after dropped connections; explicit confirmation for a fresh resend.
 - An upgrade migration preserves existing local chat and memories.
-- Searchable memory, section filtering, and manual memory creation.
-- Read-only agent profile and file listing; server health refresh.
+- Searchable memory, section filtering, creation/edit/delete, and previewed conservative compaction.
+- Authenticated workspace upload/download via Android document pickers; UTF-8 text editing with stale-save protection.
+- Read-only canonical profile/memory files and backups; live CPU/RAM/storage/uptime/API metrics with foreground refresh.
 - Settings, local chat clearing confirmation, disconnect/credential removal.
 - MVVM, repository, Retrofit/OkHttp, Room cache, Android Keystore AES-GCM credential storage.
 - Gradle wrapper and API URL validation unit tests.

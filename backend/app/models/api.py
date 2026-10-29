@@ -50,10 +50,11 @@ class FileItem(BaseModel):
     path: str
     directory: bool
     size_bytes: int = 0
+    writable: bool = False
 
 class Health(BaseModel):
     status: str = "ok"
-    version: str = "0.4.0"
+    version: str = "0.5.0"
     uptime_seconds: int
     pid: int = 0
 
@@ -95,3 +96,12 @@ class ChatRequestStatus(BaseModel):
     request_id: str
     status: Literal["not_found", "pending", "done", "failed", "interrupted"]
     reply: str | None = None
+
+class FileEdit(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    content: str = Field(max_length=262144)
+    revision: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+class CompactRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    revision: str = Field(pattern=r"^[0-9a-f]{64}$")

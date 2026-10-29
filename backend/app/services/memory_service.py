@@ -187,3 +187,74 @@ def overwrite_memory(new_text: str) -> None:
         _backup()
         _write("memory.md", new_text, "compact memory")
 
+
+
+def _line_identity(line, section):
+    if not line.startswith("- ") or section not in SECTIONS:
+        return None
+    fact = re.sub(r"\s+_\d{4}-\d{2}-\d{2}_$", "", line[2:]).strip()
+    return hashlib.sha256(f"{section}\0{fact.casefold()}".encode()).hexdigest() if fact else None
+
+
+@locked
+def change_item(identifier, section=None, fact=None):
+    """Content IDs act as edit preconditions; unrelated Markdown is preserved."""
+    text = _read("memory.md")
+    lines, current, found = [], "Projects", False
+    for line in text.splitlines():
+        if line.startswith("## "):
+            current = line[3:].strip()
+        if _line_identity(line, current) == identifier:
+            found = True
+        else:
+            lines.append(line)
+    if not found:
+        raise KeyError(identifier)
+    if fact is not None:
+        if section not in SECTIONS or not fact or len(fact) > 300:
+            raise ValueError("Invalid memory fact")
+        heading = f"## {section}"
+        if heading not in lines:
+            lines.extend(["", heading])
+        index = lines.index(heading) + 1
+        lines.insert(index, f"- {fact}  _{datetime.now(timezone.utc):%Y-%m-%d}_")
+    updated = "\n".join(lines) + "\n"
+    if len(updated) > MAX_MEMORY_CHARS and len(updated) > len(text):
+        raise ValueError("Memory is full; compact or shorten the fact")
+    _backup()
+    _write("memory.md", updated, "edit memory" if fact else "delete memory")
+
+
+def _compacted(text):
+    # Conservative compaction: exact normalized duplicates and repeated blank lines.
+    # No inference, truncation, paraphrasing, or loss of unknown Markdown content.
+    current, seen, lines, removed = "Projects", set(), [], 0
+    for line in text.splitlines():
+        if line.startswith("## "):
+            current = line[3:].strip()
+        identifier = _line_identity(line, current)
+        key = (current, " ".join(re.sub(r"\s+_\d{4}-\d{2}-\d{2}_$", "", line[2:]).split()).casefold()) if identifier else None
+        if key and key in seen:
+            removed += 1
+            continue
+        if key:
+            seen.add(key)
+        if not line.strip() and lines and not lines[-1].strip():
+            continue
+        lines.append(line)
+    return "\n".join(lines).rstrip() + "\n", removed
+
+
+@locked
+def compact_plan(revision=None):
+    text = _read("memory.md")
+    digest = hashlib.sha256(text.encode()).hexdigest()
+    updated, removed = _compacted(text)
+    plan = dict(revision=digest, before_chars=len(text), after_chars=len(updated), removed_entries=removed)
+    if revision is not None:
+        if revision != digest:
+            raise ValueError("Memory changed; preview compaction again")
+        if updated != text:
+            _backup()
+            _write("memory.md", updated, "compact duplicate memory")
+    return plan

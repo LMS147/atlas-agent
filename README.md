@@ -43,3 +43,7 @@ The GitHub repository remains `LMS147/atlas-agent`; **Atlas-AI** is the project 
 ## License
 
 No open-source license has been selected. See LICENSE. The source is not granted an MIT, Apache, or other open-source license by this restructuring.
+
+### v0.5 — File controls, memory maintenance and live monitoring
+
+The Android Files screen uploads/downloads documents through the system picker and opens UTF-8 workspace files for conflict-safe editing. The Memory screen edits/deletes saved facts and previews conservative, backed-up compaction. Server status samples real CPU/RAM/storage/uptime/API counters every ten seconds while visible, with explicit unavailable values for Android-restricted metrics. See [API contracts](docs/api.md) and [setup](docs/setup.md) for limits and operation.
