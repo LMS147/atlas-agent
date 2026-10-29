@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, Request
 from groq import APIConnectionError, APIStatusError, APITimeoutError, RateLimitError
 from backend.app.api.dependencies import Owner
 from backend.app.models.api import ChatReply, ChatRequest
-from backend.app.repositories.sessions import RequestConflict
+from backend.app.repositories.sessions import RequestConflict, ConversationGone
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -13,6 +13,8 @@ def chat(body: ChatRequest, request: Request, owner: Owner):
     try:
         reply = request.app.state.sessions.chat(owner, body.conversation_id, str(body.request_id), body.message, request.app.state.agent_runner)
         return ChatReply(reply=reply)
+    except ConversationGone as exc:
+        raise HTTPException(410, str(exc)) from None
     except RequestConflict as exc:
         raise HTTPException(409, str(exc)) from None
     except RateLimitError:

@@ -7,7 +7,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
 from backend.app.config import Settings, load_settings
-from backend.app.api.routes import chat, memory, files, system
+from backend.app.api.routes import chat, memory, files, system, conversations
 from backend.app.repositories.sessions import SessionRepository
 from backend.app.services import memory_service
 from backend.app.services.chat_service import run_agent
@@ -27,8 +27,8 @@ def create_app(settings: Settings | None = None, agent_runner=None) -> FastAPI:
         app.state.started = time.monotonic()
         yield
 
-    app = FastAPI(title="Atlas AI", version="0.2.0", lifespan=lifespan)
-    for module in (chat, memory, files, system):
+    app = FastAPI(title="Atlas AI", version="0.3.0", lifespan=lifespan)
+    for module in (chat, memory, files, system, conversations):
         app.include_router(module.router, prefix="/api/v1")
 
     @app.exception_handler(Exception)

@@ -10,7 +10,7 @@ Every `/api/v1/*` route requires `Authorization: Bearer <ATLAS_API_TOKEN>`, incl
 
 | Method | Route | Response |
 |---|---|---|
-| GET | `/api/v1/health` | `{"status":"ok","version":"0.2.0","uptime_seconds":120}` |
+| GET | `/api/v1/health` | `{"status":"ok","version":"0.3.0","uptime_seconds":120}` |
 | POST | `/api/v1/chat` | `{"reply":"Hello!"}` |
 | GET | `/api/v1/memory` | `[{"id":"stable-content-hash","section":"Projects","fact":"Build Atlas"}]` |
 | POST | `/api/v1/memory` | A memory object with `id`, `section`, `fact` |
@@ -33,7 +33,7 @@ Health confirms successful local configuration/storage startup. It does not spen
 
 Conversation context and request results persist in `DATA_DIR/atlas.sqlite3`. The current agent context retains up to 24 messages without splitting a tool turn. Completed requests with the same conversation, request ID, and message return the cached reply without calling Groq again. Reusing the ID with a changed message returns 409.
 
-A failed or interrupted request is not silently run again: reuse of its ID returns 409. Some tools may have run before a failure. Review the conversation/memory before explicitly sending a new request. This prevents automatic duplicate execution, not an exactly-once guarantee for external side effects. Context/results are retained until the local database is removed; an HTTP history/reset management endpoint is not yet implemented.
+A failed or interrupted request is not silently run again: reuse of its ID returns 409. Some tools may have run before a failure. Review the conversation/memory before explicitly sending a new request. This prevents automatic duplicate execution, not an exactly-once guarantee for external side effects. Full completed transcripts and request results persist separately from the bounded model context. Use the conversation history/deletion endpoints below to manage saved chats.
 
 Run **one API worker only**. Requests in a conversation are serialized in that process. The startup recovery policy assumes a single API process; do not use multiple workers, replicas, or development reload for the same DATA_DIR. Telegram runs separately and uses its existing independent sessions.
 
@@ -62,3 +62,24 @@ The profile is read-only. `/files` lists only `agent.md`, `memory.md`, and the l
 | 500 | Unexpected local failure; response excludes internal details |
 
 Server configuration fails at startup if ATLAS_API_TOKEN or GROQ_API_KEY is missing/invalid. The provider key's actual permissions are checked by Groq only when making an inference request.
+
+## Persistent conversations (v0.3)
+
+| Method | Route | Purpose |
+|---|---|---|
+| GET | `/api/v1/conversations` | List saved chats, newest first |
+| POST | `/api/v1/conversations` | Create a chat with `{"title":"New chat"}`; returns 201 |
+| GET | `/api/v1/conversations/{id}` | Get its title, timestamps, preview, and message count |
+| PATCH | `/api/v1/conversations/{id}` | Rename with `{"title":"Work projects"}` |
+| DELETE | `/api/v1/conversations/{id}` | Delete messages/context; returns 204 |
+| GET | `/api/v1/conversations/{id}/messages` | Read a page of the saved transcript |
+
+These routes use the same bearer authentication. Titles contain 1–80 characters. POST returns a server-generated conversation ID; pass that ID as `conversation_id` on chat requests. The first successful turn automatically titles an unnamed chat. Message counts/previews include completed turns; failed/pending requests retain their separate deduplication records.
+
+Message pages accept `limit` (1–100, default 50) and `before` (the previous page's `next_before`). They return `items`, `has_more`, and `next_before`. Items are in chronological sequence order and contain `seq`, `id`, `request_id`, `role`, `text`, and `created_at`. All timestamps use Unix milliseconds. Read successive pages to retrieve the entire transcript; the 24-message limit applies only to model context, not stored history.
+
+For synchronization, `GET /conversations?include_deleted=true` also returns content-free tombstones marked `deleted=true`. A deleted ID returns 410 and cannot be recreated by an older client. Deletion during an active reply returns 409; retry after it finishes. Deletion leaves shared Markdown memories intact. This is logical deletion, not a promise of forensic secure erasure of SQLite storage.
+
+Startup upgrades the existing SQLite schema in place and imports completed request-log entries exactly once. Their original timestamps were not recorded by older versions, so imported records use the import time and preserved request order. Existing prompt context and request IDs remain intact. Older Android clients can continue posting their fixed legacy conversation ID; those chats also appear in the history list.
+
+The API is still a single-owner workspace with one API worker. SQLite remains on DATA_DIR's persistent storage. Back up that directory before moving servers. Telegram sessions remain separate; their in-memory conversation history is not imported into API chats.

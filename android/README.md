@@ -29,6 +29,7 @@ Pinned toolchain: Gradle 8.11.1, Android Gradle Plugin 8.9.2, Kotlin/Compose com
 - Welcome and server setup screens; demo mode with explicit labels.
 - Material 3 dark theme, blue/cyan branding, navigation drawer, quick actions.
 - Live authenticated HTTPS chat with the FastAPI/Groq backend.
+- Named conversations, history switching, confirmed deletion, paged server transcript restore, and a remembered selection.
 - Room-backed delivery states, waiting indicators, timestamps, and failed-message recovery.
 - Same-request reply recovery after dropped connections; explicit confirmation for a fresh resend.
 - An upgrade migration preserves existing local chat and memories.
@@ -42,7 +43,7 @@ Pinned toolchain: Gradle 8.11.1, Android Gradle Plugin 8.9.2, Kotlin/Compose com
 
 The monorepo backend implements [the API contract](../docs/api.md). Configure backend/.env with a Groq key and a separate ATLAS_API_TOKEN, start `python -m backend.app` from the root, and expose it through an HTTPS tunnel. Enter the tunnel URL and Atlas token on the connection screen. See [setup](../docs/setup.md).
 
-Demo replies remain deterministic local examples. Live chat invokes the existing Groq agent, server histories persist in SQLite, and memory remains Markdown/GitHub-backed. File/profile views are read-only. Attachments, command execution, editing, hardware metrics, and server history management endpoints are not implemented.
+Demo replies remain deterministic local examples. Live chat invokes the existing Groq agent, server histories persist in SQLite, and memory remains Markdown/GitHub-backed. File/profile views are read-only. Attachments, command execution, editing, hardware metrics, and conversation persistence is backed by the server API.
 
 ## Data and credentials
 
@@ -78,14 +79,24 @@ app/src/main/java/com/atlas/ai/
 
 Pending sends are converted to recoverable messages when reconnecting after an app restart. Check for an unresolved reply before composing the next turn. Cached failure state survives restarts. Retrying a completed send is a no-op; replies have deterministic local IDs so recovery does not create duplicate bubbles. Network failures never become demo responses.
 
-Room schema version 2 adds delivery metadata with a migration from version 1; it does not destructively reset existing chat or memory. In-place Android updates require the same signing key; keep your original signing key when upgrading an installed debug build. A differently signed APK cannot perform that in-place update. The database is still app-private SQLite. Clearing local chat still does not reset the server conversation.
+Room schema version 3 groups messages into persistent conversations, after the version-2 delivery migration; both upgrade paths preserve existing chat and memory. It does not destructively reset existing chat or memory. In-place Android updates require the same signing key; keep your original signing key when upgrading an installed debug build. A differently signed APK cannot perform that in-place update. The database is still app-private SQLite. Clearing local chat still does not reset the server conversation.
 
 ## Verification status
 
-GitHub Actions runs `testDebugUnitTest assembleDebug` and publishes `atlas-debug-apk`. Tests now include real Retrofit/OkHttp requests to a certificate-trusted local HTTPS server, delivery/recovery behavior, and an actual Room version-1-to-2 migration under Robolectric. Check the latest [Android workflow](https://github.com/LMS147/atlas-agent/actions/workflows/android-ci.yml) for the current APK and build result.
+GitHub Actions runs `testDebugUnitTest assembleDebug` and publishes `atlas-debug-apk`. Tests now include real Retrofit/OkHttp requests to a certificate-trusted local HTTPS server, delivery/recovery behavior, and an actual Room version-1-to-3 and version-2-to-3 migrations under Robolectric. Check the latest [Android workflow](https://github.com/LMS147/atlas-agent/actions/workflows/android-ci.yml) for the current APK and build result.
 
 Emulator rendering, Android Keystore behavior on-device, and live FastAPI/Groq integration have not been verified. The API is covered by mocked-provider and local HTTP integration tests; a real Groq account and external tunnel still need end-to-end verification.
 
 ## Next phase
 
-Connect your configured server over HTTPS and verify the app on a physical device. Extend task automation, file operations, monitoring, and server conversation management in later phases.
+Connect your configured server over HTTPS and verify the app on a physical device. Extend task automation, file operations, monitoring, and other features in later phases.
+
+## Saved conversations
+
+Open **History** or the **Conversations** menu to start, select, rename, or delete chats. Android v0.3 uses the server-generated ID on every message. Complete transcripts live on the backend; Room caches downloaded pages and remembers the active chat. **Load earlier messages** downloads the next older page without resetting model context or duplicating cached bubbles.
+
+Older single-chat caches are grouped under their original `android-<workspace>` ID so server context continues. Existing demo messages move into `demo-main`. A server refresh merges completed messages by request ID, including a reply that arrived after your connection dropped. Unfinished attempts remain recoverable locally. A fresh installation can download completed history from the server; pending local drafts/failure state are not a server transcript.
+
+During network outages, a previously cached workspace can open its local chats. A chat missing from the server is retained as a read-only cached copy; an explicit deletion tombstone removes it on sync. New server conversations require a working API connection. Demo chats remain device-only. Deleting a chat does not delete shared memory facts.
+
+Tests cover cross-chat isolation, selected-chat restoration, history reconstruction with an empty client cache, pagination, tombstones, read-only missing-history caches, offline startup, delivery recovery, and both Room upgrade paths.

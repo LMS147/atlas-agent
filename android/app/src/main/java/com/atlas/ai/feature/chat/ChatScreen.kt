@@ -28,23 +28,37 @@ import java.util.Date
 import java.util.Locale
 
 @Composable internal fun Chat(s: UiState, vm: AtlasViewModel) {
- var draft by rememberSaveable { mutableStateOf("") }
- var confirmResend by rememberSaveable { mutableStateOf<String?>(null) }
+ var draft by rememberSaveable(s.activeConversation?.id) { mutableStateOf("") }
+ var confirmResend by rememberSaveable(s.activeConversation?.id) { mutableStateOf<String?>(null) }
  val list = rememberLazyListState()
  val waiting = s.messages.any { it.role == "user" && it.delivery == DeliveryStatus.PENDING }
  val unresolved = s.messages.any { it.role == "user" && it.delivery == DeliveryStatus.RETRYABLE }
  LaunchedEffect(s.restoredDraft) {
   s.restoredDraft?.let { draft = it; vm.consumeRestoredDraft() }
  }
- LaunchedEffect(s.messages.size, waiting) {
+ LaunchedEffect(s.messages.lastOrNull()?.id, waiting) {
   if (s.messages.isNotEmpty()) list.animateScrollToItem(if(waiting) s.messages.size else s.messages.size - 1)
  }
  Column(Modifier.fillMaxSize().imePadding()) {
+  Row(Modifier.fillMaxWidth().padding(horizontal=16.dp),verticalAlignment=Alignment.CenterVertically) {
+   Text(s.activeConversation?.title ?: "Choose a conversation",modifier=Modifier.weight(1f),maxLines=1,overflow=TextOverflow.Ellipsis,fontWeight=FontWeight.SemiBold)
+   TextButton(enabled=!s.busy,onClick={ vm.navigate("Conversations") }) { Text("History") }
+   TextButton(enabled=!s.busy,onClick=vm::newConversation) { Text("New") }
+  }
   Column(Modifier.fillMaxWidth().background(Panel).padding(horizontal = 20.dp, vertical = 10.dp)) {
    Text(if(s.demo) "Demo conversation" else s.connectionStatus, color = Cyan, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
    Text(if(s.demo) "Local sample replies · no AI requests" else s.serverUrl, color = Muted, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
   }
   LazyColumn(state = list, modifier = Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+   if(s.activeConversation?.hasMore == true) item(key="earlier") {
+    TextButton(enabled=!s.busy,onClick=vm::loadEarlier) { Text("Load earlier messages") }
+   }
+   if(s.activeConversation?.serverAvailable == false) item(key="cache-only") {
+    Text("Cached conversation · history is unavailable on this server. Start a new chat to send messages.",color=Cyan)
+   }
+   if(!s.demo && s.activeConversation != null) item(key="refresh") {
+    TextButton(enabled=!s.busy,onClick=vm::refreshChat) { Text("Refresh saved history") }
+   }
    if(s.messages.isEmpty()) item {
     Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
      AtlasMark(); Heading("Hello. I’m Atlas.", "What are we working on today?")
@@ -81,7 +95,7 @@ import java.util.Locale
     isError = draft.trim().length > 8000,
     supportingText = { if(draft.length > 7500) Text("${draft.trim().length}/8,000 characters") }
    )
-   FilledIconButton(enabled = !s.busy && !unresolved && draft.isNotBlank() && draft.trim().length <= 8000,
+   FilledIconButton(enabled = !s.busy && s.activeConversation != null && s.activeConversation.serverAvailable && !unresolved && draft.isNotBlank() && draft.trim().length <= 8000,
     onClick = { if(vm.send(draft)) draft = "" }) { Icon(Icons.AutoMirrored.Filled.Send, "Send message") }
   }
  }

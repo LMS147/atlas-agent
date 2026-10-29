@@ -9,6 +9,7 @@ object ChatErrors {
    401, 403 -> "Access token rejected. Check your Atlas credentials in Server setup."
    404 -> "Atlas API route was not found. Check the HTTPS server URL and backend version."
    409 -> "Atlas cannot safely replay this request. Check your conversation and memory before sending again."
+   410 -> "This conversation was deleted on the server. Choose or create another chat."
    422 -> "Atlas rejected the message format. Check the backend version and message length."
    429 -> "Groq is rate limited. Wait before choosing Send again."
    502 -> "The AI provider is unavailable. Check the server's Groq key, model, and connection."

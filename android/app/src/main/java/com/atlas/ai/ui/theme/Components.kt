@@ -39,8 +39,8 @@ internal val Panel = Color(0xFF142638)
 internal val Blue = Color(0xFF539FFF)
 internal val Cyan = Color(0xFF70D6F5)
 internal val Muted = Color(0xFFA6B9CD)
-internal val pages = listOf("Chat", "Memory", "Agent profile", "Files", "Tools", "Server status", "Settings")
-internal val pageIcons = listOf(Icons.Default.ChatBubbleOutline, Icons.Default.Psychology, Icons.Default.PersonOutline, Icons.Default.FolderOpen, Icons.Default.Build, Icons.Default.Dns, Icons.Default.Settings)
+internal val pages = listOf("Chat", "Conversations", "Memory", "Agent profile", "Files", "Tools", "Server status", "Settings")
+internal val pageIcons = listOf(Icons.Default.ChatBubbleOutline, Icons.Default.History, Icons.Default.Psychology, Icons.Default.PersonOutline, Icons.Default.FolderOpen, Icons.Default.Build, Icons.Default.Dns, Icons.Default.Settings)
 
 @Composable fun AtlasMark(modifier: Modifier = Modifier) {
  Canvas(modifier.size(72.dp)) {

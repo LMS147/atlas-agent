@@ -2,6 +2,7 @@ package com.atlas.ai.domain.repository
 
 import com.atlas.ai.data.local.Message
 import com.atlas.ai.data.local.Memory
+import com.atlas.ai.data.local.Conversation
 import com.atlas.ai.data.model.*
 import kotlinx.coroutines.flow.Flow
 
@@ -9,6 +10,15 @@ import kotlinx.coroutines.flow.Flow
 interface AtlasRepository {
  val scope: String
  val demo: Boolean
+ val offline: Boolean
+ val conversationId: String
+ fun conversations(): Flow<List<Conversation>>
+ suspend fun refreshConversations()
+ suspend fun newConversation(title: String = "New chat")
+ suspend fun selectConversation(id: String)
+ suspend fun renameConversation(id: String, title: String)
+ suspend fun deleteConversation(id: String)
+ suspend fun refreshHistory(earlier: Boolean = false)
  fun messages(): Flow<List<Message>>
  fun memories(): Flow<List<Memory>>
  fun useDemo()

@@ -90,3 +90,15 @@ bash -n deployment/termux/*.sh
 ```
 
 Tests use temporary storage and mocked Groq responses. They cover the Android API contract, bearer auth, model-tool memory writes, provider error mapping, request replay/conflicts, concurrency, restart persistence, and a live local Uvicorn startup. Linux lifecycle tests also exercise the shell helpers when /proc and process PID namespaces match. No real provider calls or credentials are used.
+
+## Conversation history
+
+Update/restart the backend and install Android v0.3.0 using the same signing key as your previous in-place build. Both database migrations run automatically. Keep the existing DATA_DIR so server history remains available.
+
+Open **History** in Chat or **Conversations** in the navigation menu. Use **New chat**, **Rename**, and the confirmed **Delete** action. Selecting a chat loads its messages from the server and keeps its context separate from other chats. **Load earlier messages** retrieves older pages; changing the AI's context window does not delete saved messages. The last-selected conversation is remembered on this device.
+
+Reinstalling the app or connecting from another device can restore completed history from the same server with a valid Atlas token. Saved credentials can also reopen the existing Room cache during an internet/tunnel outage. A failed health check with no cached workspace still requires a working server; rejected credentials do not silently switch to demo mode.
+
+If a server no longer contains a cached chat and does not report it as deleted (for example, DATA_DIR was replaced), Android retains the local copy as read-only instead of recreating it or deleting the only remaining messages. A confirmed server deletion removes the local copy on the next list synchronization. Demo conversations remain local.
+
+Deleting a conversation removes that chat's server messages and model context, while shared memory facts remain available to Atlas. Clearing the current local cache in Settings does not delete server history; refresh history to download it again. Data is not encrypted by SQLite itself. Live Groq, external tunnel, and physical-device verification still require your configured environment.

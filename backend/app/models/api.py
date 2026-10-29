@@ -52,5 +52,39 @@ class FileItem(BaseModel):
 
 class Health(BaseModel):
     status: str = "ok"
-    version: str = "0.2.0"
+    version: str = "0.3.0"
     uptime_seconds: int
+
+class ConversationName(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    title: str = Field(default="New chat", min_length=1, max_length=80)
+
+    @field_validator("title")
+    @classmethod
+    def normalize_title(cls, value: str) -> str:
+        value = " ".join(value.split())
+        if not value:
+            raise ValueError("Title cannot be blank")
+        return value
+
+class ConversationItem(BaseModel):
+    id: str
+    title: str
+    created_at: int
+    updated_at: int
+    message_count: int
+    preview: str
+    deleted: bool = False
+
+class TranscriptMessage(BaseModel):
+    seq: int
+    id: str
+    request_id: str
+    role: Literal["user", "assistant"]
+    text: str
+    created_at: int
+
+class MessagePage(BaseModel):
+    items: list[TranscriptMessage]
+    has_more: bool
+    next_before: int | None
