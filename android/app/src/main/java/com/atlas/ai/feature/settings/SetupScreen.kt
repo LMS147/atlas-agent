@@ -37,13 +37,13 @@ import kotlinx.coroutines.launch
 import com.atlas.ai.ui.theme.*
 
 @Composable internal fun Setup(vm: AtlasViewModel, busy: Boolean) {
- var url by rememberSaveable { mutableStateOf(vm.state.value.serverUrl) }; var token by remember { mutableStateOf("") }; var remember by rememberSaveable { mutableStateOf(true) }
+ var url by rememberSaveable { mutableStateOf(vm.state.value.serverUrl.ifBlank { "https://atlas-api-a9s1.onrender.com" }) }; var token by remember { mutableStateOf("") }; var remember by rememberSaveable { mutableStateOf(true) }
  LazyColumn(Modifier.fillMaxSize().imePadding().padding(24.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
   item { AtlasMark(); Spacer(Modifier.height(24.dp)); Heading("Connect to Atlas", "Enter your authenticated HTTPS endpoint. Your Groq key stays on the server.") }
   item { OutlinedTextField(value = url, onValueChange = { url = it }, label = { Text("Server URL") }, placeholder = { Text("https://atlas.example.com") }, singleLine = true, enabled = !busy, modifier = Modifier.fillMaxWidth()) }
   item { OutlinedTextField(value = token, onValueChange = { token = it }, label = { Text("Atlas access token") }, visualTransformation = PasswordVisualTransformation(), singleLine = true, enabled = !busy, modifier = Modifier.fillMaxWidth()) }
   item { Row(verticalAlignment = Alignment.CenterVertically) { Switch(checked = remember, onCheckedChange = { remember = it }, enabled = !busy); Spacer(Modifier.width(12.dp)); Text("Remember this server securely") } }
   item { Button(onClick = { vm.connect(url, token, remember) }, enabled = !busy && url.isNotBlank() && token.isNotBlank(), modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("Connect") } }
-  item { Text("Start your Atlas API and enter its HTTPS URL and access token. You can also explore demo mode.", color = Muted); TextButton(enabled = !busy, onClick = vm::demo) { Text("Explore demo instead") } }
+  item { Text("Your Render server URL is filled in. Enter your Atlas access token to connect, or change the URL to use another server.", color = Muted); TextButton(enabled = !busy, onClick = vm::demo) { Text("Explore demo instead") } }
  }
 }
