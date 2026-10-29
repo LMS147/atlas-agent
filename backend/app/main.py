@@ -6,7 +6,7 @@ import time
 import threading
 from filelock import FileLock, Timeout
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from starlette.concurrency import run_in_threadpool
 from backend.app.config import Settings, load_settings
 from backend.app.api.routes import chat, memory, files, system, conversations
@@ -34,11 +34,20 @@ def create_app(settings: Settings | None = None, agent_runner=None) -> FastAPI:
             app.state.sessions = await run_in_threadpool(initialize)
             app.state.agent_runner = agent_runner or partial(run_agent, api_key=config.groq_api_key)
             app.state.started = time.monotonic()
+            app.state.ready = True
             yield
         finally:
+            app.state.ready = False
             lease.release()
 
     app = FastAPI(title="Atlas AI", version="0.5.0", lifespan=lifespan)
+    app.state.ready = False
+
+    @app.get("/healthz", include_in_schema=False)
+    def readiness():
+        # Public platform probe; never return tokens, version, metrics or workspace data.
+        return Response(status_code=204 if app.state.ready else 503)
+
     app.state.metrics_lock = threading.Lock()
     app.state.metrics = dict(requests=0, errors=0, active_requests=0)
 

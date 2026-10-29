@@ -55,6 +55,10 @@ cd android
 
 Windows: `.\gradlew.bat testDebugUnitTest assembleDebug`. GitHub Actions publishes the `atlas-debug-apk` artifact after successful builds. Device rendering, on-device Keystore behavior, a real Groq account, and an external tunnel have not been tested by automated API tests.
 
+## Test on Render first
+
+Follow the [Render API test guide](../deployment/render/README.md). Select the separate `render.api.yaml` Blueprint for a free HTTPS API test; the older `render.yaml` still starts Telegram. Free Render storage is temporary, including conversations, memory and uploads. Use a paid disk or the phone for durable data.
+
 ## Termux API service
 
 For a supervised API with crash restart, rotated logs, and an optional Termux:Boot hook, follow [the Termux service guide](../deployment/termux/README.md). After configuring the backend and stopping the older manual API, install termux-services, restart the shell, and run from the checkout:

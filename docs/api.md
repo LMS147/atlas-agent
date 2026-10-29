@@ -4,6 +4,8 @@ The FastAPI backend implements the contract used by the current Android app. Sta
 
 ## Authentication
 
+Render can use the separate public `GET /healthz` readiness probe (empty 204 after startup, 503 while not ready). It discloses no configuration or workspace information.
+
 Every `/api/v1/*` route requires `Authorization: Bearer <ATLAS_API_TOKEN>`, including health. Use a separate randomly generated token with at least 32 printable ASCII characters and no whitespace. The Groq key stays on the server. This is a single-owner workspace: everyone with the token has the same access. Rotating the token does not erase server history. Multi-user accounts and token management are not implemented.
 
 `/docs` and `/openapi.json` expose API documentation, not workspace data. Use Swagger's **Authorize** button with the Atlas token to try the protected endpoints. Missing/incorrect credentials return 401.

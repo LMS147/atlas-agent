@@ -24,6 +24,7 @@ Open **android/** in Android Studio and choose **Explore demo** to start. The na
 Start the existing Telegram agent from the repository root with `python -m backend.telegram.bot` after installing `backend/requirements.txt` and configuring `backend/.env`.
 
 - [Setup and migration instructions](docs/setup.md)
+- [Test the Android API on Render](deployment/render/README.md)
 - [Termux API service installation](deployment/termux/README.md)
 - [Architecture and implementation status](docs/architecture.md)
 - [Android API contract](docs/api.md)
@@ -34,7 +35,7 @@ Start the existing Telegram agent from the repository root with `python -m backe
 
 Android v0.5 adds workspace file controls, memory maintenance and live monitoring, building on reply recovery and supervised Termux service setup. The project also includes named persistent conversations, full server transcript restore, paged history, remembered selection, renaming, and confirmed deletion. Live chat also includes durable delivery status, waiting indicators, safe reply recovery, and confirmed resends. Existing local history is preserved by a Room migration. The Android frontend and API share a working contract: authenticated health, Groq-backed chat, memory management, agent profile, managed file access, and monitoring. Conversation metadata, full completed transcripts, bounded AI context, and duplicate-request responses persist in SQLite. Markdown memory stays compatible with Telegram. Configure backend/.env and run `python -m backend.app`; see the setup guide for HTTPS access and Termux helpers.
 
-Task automation, file editing/downloads, hardware monitoring, multi-user accounts, and permanent tunnel setup remain future work. Android CI builds the debug APK. Backend tests cover authentication, persistence, concurrency, provider errors, model-tool memory saves, and local HTTP startup using mocked provider responses. Real Groq/tunnel/device integration requires your configured server and credentials.
+Task automation, multi-user accounts, and permanent tunnel setup remain future work. Android CI builds the debug APK. Backend tests cover authentication, persistence, concurrency, provider errors, model-tool memory saves, and local HTTP startup using mocked provider responses. Real Groq/tunnel/device integration requires your configured server and credentials.
 
 Secrets stay in environment configuration. Android stores only an Atlas access token with Keystore encryption; Groq keys remain on the backend. Do not commit runtime data, credentials, or signing keys.
 

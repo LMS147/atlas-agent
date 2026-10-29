@@ -1,0 +1,20 @@
+# Separate free API test service; existing Telegram blueprints remain independent.
+# Local SQLite, memory and uploads are TEMPORARY on this plan.
+services:
+  - type: web
+    name: atlas-api-test
+    runtime: python
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: bash deployment/render/start.sh
+    healthCheckPath: /healthz
+    autoDeployTrigger: "off"
+    envVars:
+      - key: DATA_DIR
+        value: /tmp/atlas-data
+      - key: MODEL
+        value: llama-3.3-70b-versatile
+      - key: GROQ_API_KEY
+        sync: false
+      - key: ATLAS_API_TOKEN
+        generateValue: true

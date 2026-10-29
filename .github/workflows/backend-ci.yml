@@ -1,9 +1,9 @@
 name: Backend CI
 on:
   push:
-    paths: ['backend/**', 'deployment/**', '.github/workflows/backend-ci.yml']
+    paths: ['backend/**', 'deployment/**', 'render.api.yaml', '.python-version', '.github/workflows/backend-ci.yml']
   pull_request:
-    paths: ['backend/**', 'deployment/**', '.github/workflows/backend-ci.yml']
+    paths: ['backend/**', 'deployment/**', 'render.api.yaml', '.python-version', '.github/workflows/backend-ci.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -25,3 +25,4 @@ jobs:
       - run: python -m compileall -q backend
       - run: python -m unittest discover -s backend/tests -v
       - run: bash -n deployment/termux/*.sh
+      - run: bash -n deployment/render/*.sh
