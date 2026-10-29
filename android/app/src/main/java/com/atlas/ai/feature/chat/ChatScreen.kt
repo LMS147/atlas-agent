@@ -30,9 +30,10 @@ import java.util.Locale
 @Composable internal fun Chat(s: UiState, vm: AtlasViewModel) {
  var draft by rememberSaveable(s.activeConversation?.id) { mutableStateOf("") }
  var confirmResend by rememberSaveable(s.activeConversation?.id) { mutableStateOf<String?>(null) }
+ var confirmDelivery by rememberSaveable(s.activeConversation?.id) { mutableStateOf<String?>(null) }
  val list = rememberLazyListState()
  val waiting = s.messages.any { it.role == "user" && it.delivery == DeliveryStatus.PENDING }
- val unresolved = s.messages.any { it.role == "user" && it.delivery == DeliveryStatus.RETRYABLE }
+ val unresolved = s.messages.any { it.role == "user" && it.delivery in setOf(DeliveryStatus.RETRYABLE,DeliveryStatus.UNCONFIRMED) }
  LaunchedEffect(s.restoredDraft) {
   s.restoredDraft?.let { draft = it; vm.consumeRestoredDraft() }
  }
@@ -78,7 +79,7 @@ import java.util.Locale
    }
    items(s.messages, key = { it.id }) { msg ->
     MessageBubble(msg, s.demo, s.timestamps, s.busy,
-     onRecover = { vm.retry(msg.id) }, onResend = { confirmResend = msg.id })
+     onRecover = { vm.recover(msg.id) }, onResend = { confirmResend = msg.id }, onRetryDelivery = { confirmDelivery = msg.id })
    }
    if(waiting) item(key = "waiting") {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -99,6 +100,12 @@ import java.util.Locale
     onClick = { if(vm.send(draft)) draft = "" }) { Icon(Icons.AutoMirrored.Filled.Send, "Send message") }
   }
  }
+ confirmDelivery?.let { id ->
+  AlertDialog(onDismissRequest={ confirmDelivery=null },title={ Text("Retry delivery?") },
+   text={ Text("This sends the same message with its original request ID. Atlas can return an existing result if the first delivery arrived late.") },
+   confirmButton={ TextButton(enabled=!s.busy,onClick={ confirmDelivery=null; vm.retry(id) }) { Text("Retry delivery") } },
+   dismissButton={ TextButton(onClick={ confirmDelivery=null }) { Text("Cancel") } })
+ }
  confirmResend?.let { id ->
   AlertDialog(onDismissRequest = { confirmResend = null }, title = { Text("Send this message again?") },
    text = { Text("This creates a new request. Atlas may have saved a memory before the earlier request failed. Check the conversation and memory first.") },
@@ -107,7 +114,7 @@ import java.util.Locale
  }
 }
 
-@Composable private fun MessageBubble(msg: Message, demo: Boolean, timestamps: Boolean, busy: Boolean, onRecover: () -> Unit, onResend: () -> Unit) {
+@Composable private fun MessageBubble(msg: Message, demo: Boolean, timestamps: Boolean, busy: Boolean, onRecover: () -> Unit, onResend: () -> Unit, onRetryDelivery: () -> Unit) {
  val user = msg.role == "user"
  Column(Modifier.fillMaxWidth(), horizontalAlignment = if(user) Alignment.End else Alignment.Start) {
   Surface(color = if(user) Color(0xFF225AA8) else Panel, shape = RoundedCornerShape(18.dp), modifier = Modifier.widthIn(max = 320.dp)) {
@@ -120,11 +127,13 @@ import java.util.Locale
    Text(when(msg.delivery) {
     DeliveryStatus.PENDING -> "Sending…"
     DeliveryStatus.RETRYABLE -> "Reply not received"
+    DeliveryStatus.UNCONFIRMED -> "Delivery not confirmed"
     DeliveryStatus.FAILED -> "Request failed"
     else -> "Sent"
-   }, color = if(msg.delivery in listOf(DeliveryStatus.RETRYABLE, DeliveryStatus.FAILED)) Cyan else Muted, fontSize = 11.sp, modifier = Modifier.padding(top = 5.dp))
+   }, color = if(msg.delivery in listOf(DeliveryStatus.RETRYABLE, DeliveryStatus.UNCONFIRMED, DeliveryStatus.FAILED)) Cyan else Muted, fontSize = 11.sp, modifier = Modifier.padding(top = 5.dp))
    msg.deliveryError?.let { Text(it, color = Muted, fontSize = 12.sp, modifier = Modifier.widthIn(max = 320.dp)) }
    if(msg.delivery == DeliveryStatus.RETRYABLE) TextButton(enabled = !busy, onClick = onRecover) { Text("Check for reply") }
+   if(msg.delivery == DeliveryStatus.UNCONFIRMED) TextButton(enabled = !busy, onClick = onRetryDelivery) { Text("Retry delivery…") }
    if(msg.delivery == DeliveryStatus.FAILED) TextButton(enabled = !busy, onClick = onResend) { Text("Send again…") }
   }
   if(timestamps) Text(SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(msg.createdAt)), color = Muted, fontSize = 10.sp, modifier = Modifier.padding(6.dp))

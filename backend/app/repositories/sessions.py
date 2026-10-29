@@ -163,13 +163,19 @@ class SessionRepository:
             items = [dict(row) for row in rows[:limit]][::-1]
             return dict(items=items, has_more=more, next_before=items[0]["seq"] if more and items else None)
 
-    def chat(self, owner: str, conversation: str, request_id: str, message: str, runner) -> str:
+    def request_status(self, owner, conversation, request_id):
+        with self._db() as db:
+            self._existing(db, owner, conversation)
+            row = db.execute("SELECT status,reply FROM requests WHERE owner=? AND conversation=? AND id=?", (owner, conversation, request_id)).fetchone()
+            return dict(request_id=request_id, status=row["status"] if row else "not_found", reply=row["reply"] if row and row["status"] == "done" else None)
+
+    def chat(self, owner: str, conversation: str, request_id: str, message: str, runner, require_existing: bool = False) -> str:
         slot = int.from_bytes(hashlib.sha256(f"{owner}\0{conversation}".encode()).digest()[:2], "big") % len(self._locks)
         with self._locks[slot]:
             key = (owner, conversation, request_id)
             with self._db() as db:
                 db.execute("BEGIN IMMEDIATE")
-                row = self._ensure(db, owner, conversation)
+                row = self._existing(db, owner, conversation) if require_existing else self._ensure(db, owner, conversation)
                 previous = db.execute("SELECT message,status,reply FROM requests WHERE owner=? AND conversation=? AND id=?", key).fetchone()
                 if previous:
                     if previous[0] != message:

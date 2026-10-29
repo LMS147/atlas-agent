@@ -165,13 +165,48 @@ class DefaultAtlasRepository(
   require(message.role == "user" && message.conversationId == conversationId) { "Open this message’s conversation before retrying." }
   if (message.delivery == DeliveryStatus.SENT) return@withLock
   if (newRequest) require(message.delivery == DeliveryStatus.FAILED) { "Check for the existing reply first." }
-  else require(message.delivery == DeliveryStatus.RETRYABLE) { "This request requires confirmation before sending again." }
+  else require(message.delivery in setOf(DeliveryStatus.RETRYABLE,DeliveryStatus.UNCONFIRMED)) { "This request requires confirmation before sending again." }
   val pending = message.copy(
    delivery = DeliveryStatus.PENDING, deliveryError = null,
    requestId = if (newRequest) UUID.randomUUID().toString() else message.requestId.ifBlank { message.id }
   )
   dao.insert(pending)
   deliver(pending)
+ }
+ override suspend fun recover(id: String) = chatMutex.withLock {
+  val message = requireNotNull(dao.message(scope,id)) { "Message not found in this workspace." }
+  require(message.role == "user" && message.conversationId == conversationId)
+  if(message.delivery == DeliveryStatus.SENT) return@withLock
+  require(message.delivery in setOf(DeliveryStatus.RETRYABLE,DeliveryStatus.UNCONFIRMED))
+  val pending = message.copy(delivery=DeliveryStatus.PENDING,deliveryError=null)
+  dao.insert(pending)
+  val remote = api
+  if(remote == null && demo) { deliver(pending); return@withLock }
+  try {
+   val status = checkNotNull(remote).requestStatus(message.conversationId,message.requestId.ifBlank { message.id })
+   if(status.request_id != message.requestId.ifBlank { message.id }) throw InvalidReplyException()
+   when(status.status) {
+    "done" -> {
+     val reply = status.reply
+     if(reply.isNullOrBlank()) throw InvalidReplyException()
+     cacheReply(pending,reply)
+     offline=false
+     updateSummary(message.conversationId)
+    }
+    "pending" -> dao.insert(message.copy(delivery=DeliveryStatus.RETRYABLE,deliveryError="Atlas is still processing this request. Check again later."))
+    "not_found" -> dao.insert(message.copy(delivery=DeliveryStatus.UNCONFIRMED,deliveryError="No request record yet. Retry delivery with the same request ID."))
+    "failed", "interrupted" -> dao.insert(message.copy(delivery=DeliveryStatus.FAILED,deliveryError="The earlier request did not finish. Check memory before confirming a new request."))
+    else -> throw InvalidReplyException()
+   }
+  } catch(e:Exception) {
+   val delivery = if(e is HttpException && e.code() in setOf(401,403,404,410)) DeliveryStatus.FAILED else DeliveryStatus.RETRYABLE
+   withContext(NonCancellable) { dao.insert(message.copy(delivery=delivery,deliveryError=ChatErrors.message(e))) }
+   throw e
+  }
+ }
+ private suspend fun cacheReply(message: Message, reply: String) {
+  dao.complete(message, Message("${message.id}-reply", message.scope, "assistant", reply,
+   createdAt=maxOf(System.currentTimeMillis(),message.createdAt+1),requestId=message.requestId,conversationId=message.conversationId))
  }
  private suspend fun deliver(message: Message) {
   val remote = api
@@ -184,7 +219,7 @@ class DefaultAtlasRepository(
     remote.chat(ChatRequest(message.text, message.conversationId, message.requestId.ifBlank { message.id })).reply
    }
    if (reply.isNullOrBlank()) throw InvalidReplyException()
-   dao.complete(message, Message("${message.id}-reply", message.scope, "assistant", reply, createdAt = maxOf(System.currentTimeMillis(), message.createdAt + 1), requestId = message.requestId, conversationId = message.conversationId))
+   cacheReply(message,reply)
   } catch (e: Exception) {
    val state = if (e is HttpException && e.code() in setOf(401, 403, 404, 409, 410, 422, 429, 502, 504)) DeliveryStatus.FAILED else DeliveryStatus.RETRYABLE
    withContext(NonCancellable) {

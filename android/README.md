@@ -74,7 +74,7 @@ app/src/main/java/com/atlas/ai/
 1. Start your configured API and HTTPS tunnel as described in ../docs/setup.md.
 2. Enter the HTTPS server URL and Atlas access token on Server setup. The app checks authenticated health before switching workspaces.
 3. Send a message (maximum 8,000 characters). The user message is saved before the request, and the actual server reply is cached after success.
-4. If the connection drops, choose **Check for reply** on that message. The app reuses its original UUID and conversation ID, letting the backend return its cached result without re-running the agent. It does not retry automatically.
+4. If the connection drops, choose **Check for reply** on that message. The app reads its status using the original UUID and conversation ID. A saved result is restored without posting another inference request. If no record exists yet, **Retry delivery…** asks before sending the original UUID again. It does not retry automatically.
 5. Explicit backend failures show **Send again…**, which asks for confirmation before creating a new request UUID. The previous request may have saved a memory before failing; inspect the conversation/memory first.
 
 Pending sends are converted to recoverable messages when reconnecting after an app restart. Check for an unresolved reply before composing the next turn. Cached failure state survives restarts. Retrying a completed send is a no-op; replies have deterministic local IDs so recovery does not create duplicate bubbles. Network failures never become demo responses.
@@ -100,3 +100,9 @@ Older single-chat caches are grouped under their original `android-<workspace>` 
 During network outages, a previously cached workspace can open its local chats. A chat missing from the server is retained as a read-only cached copy; an explicit deletion tombstone removes it on sync. New server conversations require a working API connection. Demo chats remain device-only. Deleting a chat does not delete shared memory facts.
 
 Tests cover cross-chat isolation, selected-chat restoration, history reconstruction with an empty client cache, pagination, tombstones, read-only missing-history caches, offline startup, delivery recovery, and both Room upgrade paths.
+
+## Reliability v0.4
+
+Recovery uses GET request status, not chat POST. Pending requests remain recoverable; interrupted/failed requests require a confirmed new UUID. Unknown deliveries get a separate confirmation that reuses the original UUID. The composer waits for an unresolved delivery to be checked or resolved. Rate-limit errors show the server's Retry-After delay. require_existing=true prevents a new client from recreating a missing server conversation with empty context. The existing Room schema remains version 3; the additional delivery state is stored in the existing text column.
+
+Update the backend to v0.4 before using this app version. The backend also provides supervised Termux startup, crash recovery, logs, and boot-hook installation; see deployment/termux/README.md from the repository root.

@@ -180,5 +180,82 @@ class ConversationTests(unittest.TestCase):
                 self.assertEqual(422, client.patch(f"/api/v1/conversations/{identifier}", json={"title": title}, headers=HEADERS).status_code)
             self.assertEqual(404, client.get("/api/v1/conversations/not-here/messages", headers=HEADERS).status_code)
 
+
+class ReliabilityTests(unittest.TestCase):
+    def setUp(self):
+        self.temp=tempfile.TemporaryDirectory()
+        self.root=Path(self.temp.name)
+        self.env=patch.dict(os.environ,{"GH_REPO":""},clear=True)
+        self.env.start()
+        self.settings=Settings(TOKEN,"test-only",self.root)
+
+    def tearDown(self):
+        self.env.stop(); self.temp.cleanup()
+
+    def test_request_status_never_invokes_agent_and_survives_restart(self):
+        calls=[]
+        def runner(history,text):
+            calls.append(text)
+            return "Actual reply", history+[{"role":"user","content":text},{"role":"assistant","content":"Actual reply"}]
+        identifier=None
+        request_id=str(uuid4())
+        with TestClient(create_app(self.settings,runner)) as client:
+            identifier=client.post("/api/v1/conversations",json={},headers=HEADERS).json()["id"]
+            path=f"/api/v1/conversations/{identifier}/requests/{request_id}"
+            self.assertEqual(401,client.get(path).status_code)
+            self.assertEqual("not_found",client.get(path,headers=HEADERS).json()["status"])
+            self.assertEqual([],calls)
+            response=client.post("/api/v1/chat",json=dict(conversation_id=identifier,message="Hello",request_id=request_id,require_existing=True),headers=HEADERS)
+            self.assertEqual(200,response.status_code)
+            status=client.get(path,headers=HEADERS).json()
+            self.assertEqual({"request_id":request_id,"status":"done","reply":"Actual reply"},status)
+            self.assertEqual(1,len(calls))
+        with TestClient(create_app(self.settings,runner)) as client:
+            self.assertEqual("Actual reply",client.get(path,headers=HEADERS).json()["reply"])
+            self.assertEqual(1,len(calls))
+
+    def test_pending_status_is_nonblocking_and_reports_failed_or_interrupted(self):
+        entered,release=threading.Event(),threading.Event()
+        def runner(history,text):
+            entered.set(); release.wait(timeout=5)
+            raise RuntimeError("simulated failure")
+        with TestClient(create_app(self.settings,runner)) as client,ThreadPoolExecutor(max_workers=1) as pool:
+            identifier=client.post("/api/v1/conversations",json={},headers=HEADERS).json()["id"]
+            rid=str(uuid4())
+            path=f"/api/v1/conversations/{identifier}/requests/{rid}"
+            future=pool.submit(client.post,"/api/v1/chat",json=dict(conversation_id=identifier,message="Wait",request_id=rid,require_existing=True),headers=HEADERS)
+            try:
+                self.assertTrue(entered.wait(timeout=3))
+                self.assertEqual("pending",client.get(path,headers=HEADERS).json()["status"])
+            finally:release.set()
+            self.assertEqual(500,future.result(timeout=5).status_code)
+            self.assertEqual("failed",client.get(path,headers=HEADERS).json()["status"])
+        with sqlite3.connect(self.root/"atlas.sqlite3") as db:
+            db.execute("UPDATE requests SET status='pending' WHERE id=?",(rid,))
+        with TestClient(create_app(self.settings,runner)) as client:
+            self.assertEqual("interrupted",client.get(path,headers=HEADERS).json()["status"])
+
+    def test_new_client_cannot_recreate_missing_history_after_data_reset(self):
+        calls=[]
+        with TestClient(create_app(self.settings,lambda history,text:(calls.append(text) or "Reply",[]))) as client:
+            response=client.post("/api/v1/chat",json=dict(conversation_id="missing-chat",request_id=str(uuid4()),message="Do not recreate",require_existing=True),headers=HEADERS)
+            self.assertEqual(404,response.status_code)
+            self.assertEqual([],client.get("/api/v1/conversations",headers=HEADERS).json())
+            self.assertEqual([],calls)
+
+    def test_second_api_process_cannot_interrupt_a_live_request(self):
+        with TestClient(create_app(self.settings,lambda h,t:("Reply",[]))) as first:
+            identifier=first.post("/api/v1/conversations",json={},headers=HEADERS).json()["id"]
+            rid=str(uuid4())
+            with sqlite3.connect(self.root/"atlas.sqlite3") as db:
+                db.execute("INSERT INTO requests(owner,conversation,id,message,status,reply,created_at) VALUES ('owner',?,?,?,'pending',NULL,1)",(identifier,rid,"In flight"))
+            with self.assertRaisesRegex(RuntimeError,"already using DATA_DIR"):
+                with TestClient(create_app(self.settings)):
+                    pass
+            status=first.get(f"/api/v1/conversations/{identifier}/requests/{rid}",headers=HEADERS).json()["status"]
+            self.assertEqual("pending",status)
+        with TestClient(create_app(self.settings)) as second:
+            self.assertEqual("interrupted",second.get(f"/api/v1/conversations/{identifier}/requests/{rid}",headers=HEADERS).json()["status"])
+
 if __name__ == "__main__":
     unittest.main()

@@ -55,19 +55,18 @@ cd android
 
 Windows: `.\gradlew.bat testDebugUnitTest assembleDebug`. GitHub Actions publishes the `atlas-debug-apk` artifact after successful builds. Device rendering, on-device Keystore behavior, a real Groq account, and an external tunnel have not been tested by automated API tests.
 
-## Termux API lifecycle
+## Termux API service
 
-After installing Python/Git in Termux, clone the repository, install backend/requirements.txt, and configure backend/.env. From the root:
+For a supervised API with crash restart, rotated logs, and an optional Termux:Boot hook, follow [the Termux service guide](../deployment/termux/README.md). After configuring the backend and stopping the older manual API, install termux-services, restart the shell, and run from the checkout:
 
 ```sh
-bash deployment/termux/start.sh
-bash deployment/termux/healthcheck.sh
-bash deployment/termux/stop.sh
+bash deployment/termux/install-service.sh --enable --boot
+bash deployment/termux/service.sh status
 ```
 
-These now manage the **API**. They verify process identity and make an authenticated HTTP health request. `ATLAS_PYTHON` can point to a virtual environment's Python executable. Logs/PID state are in ignored `.run/api.log` and `.run/api.pid`. A stale lock after abrupt interruption needs manual inspection. Startup/boot integration, wake locks, Android battery exemptions, and tunnel lifecycle automation are not configured by these helpers.
+Activate the intended virtual environment first or set ATLAS_PYTHON to its interpreter. Credentials remain in backend/.env. This registers the service on the phone where you run it; it does not remotely configure a phone from GitHub. Existing SSH/tunnel boot scripts are preserved.
 
-Run one API worker/process per DATA_DIR. Use the launcher above rather than adding `--workers` or `--reload`. Keep the directory on persistent storage; SQLite history is local even when Markdown memory is GitHub-backed.
+The original start/stop/health scripts delegate to the installed service. Without registration they still support manual development. Single-process ownership of DATA_DIR is enforced at API startup. Existing conversation data is retained. Samsung battery restrictions and Termux:Boot activation need manual phone setup and a real reboot check.
 
 ## Existing Telegram bot
 
@@ -102,3 +101,9 @@ Reinstalling the app or connecting from another device can restore completed his
 If a server no longer contains a cached chat and does not report it as deleted (for example, DATA_DIR was replaced), Android retains the local copy as read-only instead of recreating it or deleting the only remaining messages. A confirmed server deletion removes the local copy on the next list synchronization. Demo conversations remain local.
 
 Deleting a conversation removes that chat's server messages and model context, while shared memory facts remain available to Atlas. Clearing the current local cache in Settings does not delete server history; refresh history to download it again. Data is not encrypted by SQLite itself. Live Groq, external tunnel, and physical-device verification still require your configured environment.
+
+## Chat reliability v0.4
+
+Update/restart the backend before installing Android v0.4. **Check for reply** now checks a read-only request-status endpoint and can restore a saved result without posting another AI request. Pending results stay recoverable. A missing record offers **Retry delivery…**, which keeps the original UUID after confirmation. Failed/interrupted attempts require confirmation for a fresh request; check saved memories first because a tool may have run before failure.
+
+The app displays Retry-After guidance for rate limits. Automatic new inference retries remain disabled. New requests require a known conversation on the server, so replacing DATA_DIR cannot silently reset an existing conversation. SQLite/Room histories and existing delivery IDs are preserved; this release adds a delivery-state value without changing the Room schema.

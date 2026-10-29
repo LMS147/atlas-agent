@@ -1,7 +1,8 @@
 from typing import Annotated
+from uuid import UUID
 from fastapi import APIRouter, HTTPException, Path, Query, Request, Response
 from backend.app.api.dependencies import Owner
-from backend.app.models.api import ConversationItem, ConversationName, MessagePage
+from backend.app.models.api import ConversationItem, ConversationName, MessagePage, ChatRequestStatus
 from backend.app.repositories.sessions import ConversationMissing, ConversationGone, RequestConflict
 
 router = APIRouter()
@@ -43,3 +44,7 @@ def messages(identifier: ConversationId, request: Request, owner: Owner,
 @router.get("/conversations/{identifier}", response_model=ConversationItem)
 def conversation(identifier: ConversationId, request: Request, owner: Owner):
     return operation(request.app.state.sessions.get_conversation, owner, identifier)
+
+@router.get("/conversations/{identifier}/requests/{request_id}", response_model=ChatRequestStatus)
+def request_status(identifier: ConversationId, request_id: UUID, request: Request, owner: Owner):
+    return operation(request.app.state.sessions.request_status, owner, identifier, str(request_id))

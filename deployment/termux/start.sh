@@ -2,6 +2,9 @@
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 cd "$ROOT"
+if [[ -n "${PREFIX:-}" && -f "$PREFIX/var/service/atlas-api/atlas-managed.json" ]]; then
+  exec "$ATLAS_PYTHON" -m backend.termux_service start
+fi
 mkdir -p .run
 mkdir .run/api.lock 2>/dev/null || { echo "Another API lifecycle operation is running; inspect .run/api.lock if stale." >&2; exit 1; }
 trap 'rmdir "$ROOT/.run/api.lock"' EXIT

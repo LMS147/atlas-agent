@@ -4,6 +4,7 @@ import retrofit2.http.*
 import com.atlas.ai.data.model.*
 
 interface AtlasApi {
+ @GET("api/v1/conversations/{id}/requests/{request}") suspend fun requestStatus(@Path("id") id: String, @Path("request") request: String): ChatRequestStatus
  @GET("api/v1/conversations") suspend fun conversations(@Query("include_deleted") includeDeleted: Boolean = true): List<ConversationDto>
  @POST("api/v1/conversations") suspend fun createConversation(@Body name: ConversationName): ConversationDto
  @GET("api/v1/conversations/{id}") suspend fun conversation(@Path("id") id: String): ConversationDto

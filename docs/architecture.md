@@ -30,11 +30,11 @@ Chat routes invoke the existing synchronous Groq agent from worker-thread route 
 
 The existing Python memory backend still uses local Markdown or GitHub storage. Local file locks and atomic replacement let Telegram and the API share memory. Telegram's own conversation sessions remain in RAM and separate from API histories.
 
-Termux's default start/stop/health scripts now manage FastAPI and check authenticated HTTP health. The original Telegram scripts remain under explicit *-telegram.sh names. Existing Render/Fly configurations still serve Telegram. Cloudflare instructions describe HTTPS forwarding; no tunnel is configured automatically.
+Termux has a managed termux-services/runit API service with a separate boot hook, crash backoff, rotated logs, and authenticated process-aware health. Its default start/stop/health scripts delegate to that registration, with manual fallback when unregistered. The original Telegram scripts remain under explicit *-telegram.sh names. Existing Render/Fly configurations still serve Telegram. Cloudflare instructions describe HTTPS forwarding; no tunnel is configured automatically.
 
 ## Remaining features
 
-Task/automation modules, hardware monitoring, file downloads/edits, multi-user accounts, permanent tunnel/boot integration, and independent domain/data mapping remain future work. File/profile screens are read-only. Public /docs and /openapi.json describe the API; workspace routes require the Atlas token.
+Task/automation modules, hardware monitoring, file downloads/edits, multi-user accounts, permanent tunnel integration, and independent domain/data mapping remain future work. File/profile screens are read-only. Public /docs and /openapi.json describe the API; workspace routes require the Atlas token.
 
 Reserved directories use .gitkeep or Python __init__.py. Their presence does not indicate a completed feature.
 
@@ -43,3 +43,9 @@ Reserved directories use .gitkeep or Python __init__.py. Their presence does not
 The server generates conversation IDs and keeps transcript rows separately from the 24-message agent context. Metadata/history routes support renaming, cursor paging, and deletion. Startup imports the older request log once, preserving IDs and message order. Deleted IDs remain reserved with content-free tombstones, preventing old clients from reviving them.
 
 Android's Room v3 cache keys messages by workspace and conversation, persists a selected-conversation row, and hydrates completed turns by their request IDs. A confirmed server deletion purges its cache; missing history without a tombstone remains read-only locally. Saved-token startup can open cached chats during connection failures. The single-owner bearer-token model is unchanged, and Telegram sessions remain separate.
+
+## Service ownership and read-only recovery
+
+A file lock held over the API lifespan enforces one API process per DATA_DIR, before recovery can mark stale requests interrupted. The Termux supervisor runs that process in the foreground and restarts it after crashes. Health includes the API PID, allowing service readiness to reject a response from another process on the port.
+
+Android recovery reads a persisted request-status endpoint without starting another inference. Unknown delivery and known failed/interrupted work have distinct confirmation paths. New clients require a known server conversation when posting chat; legacy auto-creation remains compatible for older clients. No Room migration is needed for the new text-based delivery state. Existing SSH and tunnel services remain independently managed.

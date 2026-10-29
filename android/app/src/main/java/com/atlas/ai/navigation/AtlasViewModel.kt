@@ -70,10 +70,11 @@ class AtlasViewModel(app: Application) : AndroidViewModel(app) {
  fun send(text: String): Boolean {
   if (_state.value.activeConversation == null || _state.value.activeConversation?.serverAvailable == false) return false
   if (_state.value.busy || text.isBlank() || text.trim().length > 8000) return false
-  if (_state.value.messages.any { it.role == "user" && it.delivery == com.atlas.ai.domain.model.DeliveryStatus.RETRYABLE }) return false
+  if (_state.value.messages.any { it.role == "user" && it.delivery in setOf(com.atlas.ai.domain.model.DeliveryStatus.RETRYABLE,com.atlas.ai.domain.model.DeliveryStatus.UNCONFIRMED) }) return false
   task(draft = text) { sendMessage(text); _state.update { it.copy(connectionStatus = if(it.demo) "Demo mode" else "Connected · HTTPS") } }
   return true
  }
+ fun recover(id: String) = task { repo.recover(id); connectionStatus() }
  fun retry(id: String, newRequest: Boolean = false) = task {
   repo.retry(id, newRequest)
   _state.update { it.copy(connectionStatus = if(it.demo) "Demo mode" else "Connected · HTTPS") }

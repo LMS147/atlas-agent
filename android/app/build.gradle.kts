@@ -7,7 +7,7 @@ plugins {
 android {
  namespace = "com.atlas.ai"
  compileSdk = 35
- defaultConfig { applicationId = "com.atlas.ai"; minSdk = 26; targetSdk = 35; versionCode = 3; versionName = "0.3.0"; testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner" }
+ defaultConfig { applicationId = "com.atlas.ai"; minSdk = 26; targetSdk = 35; versionCode = 4; versionName = "0.4.0"; testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner" }
  buildFeatures { compose = true }
  testOptions { unitTests.isIncludeAndroidResources = true }
  compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }

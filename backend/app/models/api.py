@@ -10,6 +10,7 @@ class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=8000)
     conversation_id: str = Field(min_length=1, max_length=128, pattern=r"^[a-zA-Z0-9._:-]+$")
     request_id: UUID
+    require_existing: bool = False
 
     @field_validator("message")
     @classmethod
@@ -52,8 +53,9 @@ class FileItem(BaseModel):
 
 class Health(BaseModel):
     status: str = "ok"
-    version: str = "0.3.0"
+    version: str = "0.4.0"
     uptime_seconds: int
+    pid: int = 0
 
 class ConversationName(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -88,3 +90,8 @@ class MessagePage(BaseModel):
     items: list[TranscriptMessage]
     has_more: bool
     next_before: int | None
+
+class ChatRequestStatus(BaseModel):
+    request_id: str
+    status: Literal["not_found", "pending", "done", "failed", "interrupted"]
+    reply: str | None = None

@@ -32,6 +32,8 @@ class RealChatTest {
  private val metadata=linkedMapOf<String,ConversationDto>()
  private val transcript=mutableMapOf<String,MutableList<TranscriptDto>>()
  private var sequence=0L
+ private val requestStates=mutableMapOf<String,String>()
+ private var disconnectStatus=false
  private var healthStatus=200
  private var stopped=false
  private val gson=Gson()
@@ -61,6 +63,7 @@ class RealChatTest {
      val payload=body(request)
      val id=payload["conversation_id"].asString
      val requestId=payload["request_id"].asString
+     if(payload["require_existing"].asBoolean && metadata[id]==null) return json(mapOf("detail" to "missing"),404)
      if(metadata[id]?.deleted==true) return json(mapOf("detail" to "deleted"),410)
      val text=payload["message"].asString
      val override=responses.poll()
@@ -71,6 +74,12 @@ class RealChatTest {
     val id=path.removePrefix("/api/v1/conversations/").substringBefore('/')
     val item=metadata[id] ?: return json(mapOf("detail" to "missing"),404)
     if(item.deleted) return json(mapOf("detail" to "deleted"),410)
+    if(path.contains("/requests/")) {
+     if(disconnectStatus) { disconnectStatus=false; return MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AFTER_REQUEST) }
+     val rid=path.substringAfterLast('/')
+     val reply=transcript[id]?.firstOrNull { it.request_id==rid && it.role=="assistant" }?.text
+     return json(ChatRequestStatus(rid,requestStates[rid] ?: if(reply!=null) "done" else "not_found",reply))
+    }
     if(path.endsWith("/messages")) {
      val before=request.requestUrl!!.queryParameter("before")?.toLong()
      val limit=request.requestUrl!!.queryParameter("limit")?.toInt() ?: 50
@@ -108,6 +117,7 @@ class RealChatTest {
   assertEquals("Hello Atlas",payload["message"].asString)
   assertEquals(repo.conversationId,payload["conversation_id"].asString)
   UUID.fromString(payload["request_id"].asString)
+  assertTrue(payload["require_existing"].asBoolean)
   val rows=repo.messages().first()
   assertEquals(listOf("user","assistant"),rows.map { it.role })
   assertEquals("Real reply to: Hello Atlas",rows.last().text)
@@ -119,12 +129,13 @@ class RealChatTest {
   try { repo.send("Remember this"); fail("Expected transport failure") } catch(_:java.io.IOException) {}
   val message=repo.messages().first().single()
   assertEquals(DeliveryStatus.RETRYABLE,message.delivery)
-  repo.retry(message.id,false)
+  repo.recover(message.id)
   val attempts=chatRequests().map { body(it)["request_id"].asString }
-  assertEquals(2,attempts.size); assertEquals(attempts[0],attempts[1])
+  assertEquals(1,attempts.size)
+  assertTrue(requests.any { it.path?.contains("/requests/")==true })
   assertEquals(2,repo.messages().first().size)
   repo.refreshHistory(); assertEquals(2,repo.messages().first().size)
-  repo.retry(message.id,false); assertEquals(2,chatRequests().size)
+  repo.recover(message.id); assertEquals(1,chatRequests().size)
  }
  @Test fun explicitFailureRequiresConfirmedFreshRequest()=runBlocking {
   connect(); responses.offer(json(mapOf("detail" to "incomplete"),409))
@@ -143,6 +154,9 @@ class RealChatTest {
   repo=newRepository(); connect()
   assertTrue(chatRequests().isEmpty())
   assertEquals(DeliveryStatus.RETRYABLE,repo.messages().first().single().delivery)
+  repo.recover(id)
+  assertEquals(DeliveryStatus.UNCONFIRMED,repo.messages().first().single().delivery)
+  assertTrue(chatRequests().isEmpty())
   repo.retry(id,false)
   assertEquals(id,body(chatRequests().single())["request_id"].asString)
  }
@@ -213,4 +227,38 @@ class RealChatTest {
   repo.useDemo(); repo.seed(); assertEquals(demoId,repo.conversationId)
   assertEquals("Demo only",repo.messages().first().first().text)
  }
+ @Test fun checkingPendingAndInterruptedRequestsNeverStartsAnotherInference()=runBlocking {
+  connect()
+  val id=UUID.randomUUID().toString()
+  dao.insert(Message(id,repo.scope,"user","Pending on server",delivery=DeliveryStatus.RETRYABLE,requestId=id,conversationId=repo.conversationId))
+  requestStates[id]="pending"
+  repo.recover(id)
+  assertEquals(DeliveryStatus.RETRYABLE,repo.messages().first().single().delivery)
+  assertTrue(repo.messages().first().single().deliveryError!!.contains("still processing"))
+  requestStates[id]="interrupted"
+  repo.recover(id)
+  assertEquals(DeliveryStatus.FAILED,repo.messages().first().single().delivery)
+  assertTrue(chatRequests().isEmpty())
+ }
+ @Test fun statusTransportFailureKeepsRecoveryStateAndOriginalRequest()=runBlocking {
+  connect()
+  val id=UUID.randomUUID().toString()
+  dao.insert(Message(id,repo.scope,"user","Uncertain",delivery=DeliveryStatus.RETRYABLE,requestId=id,conversationId=repo.conversationId))
+  disconnectStatus=true
+  try { repo.recover(id); fail("Expected disconnected status check") } catch(_:java.io.IOException) {}
+  val row=repo.messages().first().single()
+  assertEquals(DeliveryStatus.RETRYABLE,row.delivery)
+  assertEquals(id,row.requestId)
+  assertTrue(chatRequests().isEmpty())
+ }
+ @Test fun rateLimitGuidanceHonorsRetryAfterWithoutAutomaticResend()=runBlocking {
+  connect()
+  responses.offer(json(mapOf("detail" to "rate limit"),429).setHeader("Retry-After","45"))
+  try { repo.send("Wait for quota"); fail("Expected rate limit") } catch(_:retrofit2.HttpException) {}
+  val row=repo.messages().first().single()
+  assertEquals(DeliveryStatus.FAILED,row.delivery)
+  assertTrue(row.deliveryError!!.contains("45 seconds"))
+  assertEquals(1,chatRequests().size)
+ }
+
 }

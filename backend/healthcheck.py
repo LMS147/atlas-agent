@@ -1,11 +1,11 @@
-"""Local authenticated API probe; token never appears in process arguments."""
+"""Local authenticated probe; credentials never appear in process arguments."""
 import http.client
 import json
 import sys
 from backend.app.config import load_settings
 
 
-def main():
+def probe(expected_pid=None):
     try:
         settings = load_settings()
         host = {"0.0.0.0": "127.0.0.1", "::": "::1"}.get(settings.host, settings.host)
@@ -15,13 +15,20 @@ def main():
             response = connection.getresponse()
             payload = json.loads(response.read(8192))
             healthy = response.status == 200 and payload.get("status") == "ok"
+            if expected_pid is not None:
+                healthy = healthy and payload.get("pid") == expected_pid
+            return healthy, payload
         finally:
             connection.close()
-        if healthy:
-            print("Atlas API is healthy")
-            return 0
     except Exception:
-        pass
+        return False, None
+
+
+def main():
+    healthy, _ = probe()
+    if healthy:
+        print("Atlas API is healthy")
+        return 0
     print("Atlas API is unavailable or configuration/authentication is invalid", file=sys.stderr)
     return 1
 

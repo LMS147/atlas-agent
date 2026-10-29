@@ -156,6 +156,8 @@ class ApiTests(unittest.TestCase):
                 body = self.payload(conversation=str(uuid4()))
                 response = client.post("/api/v1/chat", json=body, headers=HEADERS)
                 self.assertEqual(status, response.status_code, response.text)
+                if status == 429:
+                    self.assertEqual("30", response.headers["Retry-After"])
                 self.assertNotIn("private upstream", response.text)
                 self.assertEqual(409, client.post("/api/v1/chat", json=body, headers=HEADERS).status_code)
                 self.assertEqual(1, len(calls))

@@ -10,7 +10,7 @@ Every `/api/v1/*` route requires `Authorization: Bearer <ATLAS_API_TOKEN>`, incl
 
 | Method | Route | Response |
 |---|---|---|
-| GET | `/api/v1/health` | `{"status":"ok","version":"0.3.0","uptime_seconds":120}` |
+| GET | `/api/v1/health` | `{"status":"ok","version":"0.4.0","uptime_seconds":120}` |
 | POST | `/api/v1/chat` | `{"reply":"Hello!"}` |
 | GET | `/api/v1/memory` | `[{"id":"stable-content-hash","section":"Projects","fact":"Build Atlas"}]` |
 | POST | `/api/v1/memory` | A memory object with `id`, `section`, `fact` |
@@ -83,3 +83,19 @@ For synchronization, `GET /conversations?include_deleted=true` also returns cont
 Startup upgrades the existing SQLite schema in place and imports completed request-log entries exactly once. Their original timestamps were not recorded by older versions, so imported records use the import time and preserved request order. Existing prompt context and request IDs remain intact. Older Android clients can continue posting their fixed legacy conversation ID; those chats also appear in the history list.
 
 The API is still a single-owner workspace with one API worker. SQLite remains on DATA_DIR's persistent storage. Back up that directory before moving servers. Telegram sessions remain separate; their in-memory conversation history is not imported into API chats.
+
+## Read-only recovery and startup ownership (v0.4)
+
+`GET /api/v1/conversations/{id}/requests/{request_id}` requires the same bearer token and accepts a UUID. It returns:
+
+```json
+{"request_id":"21c37b36-981d-4214-b48c-717627d003f3","status":"done","reply":"Saved reply"}
+```
+
+Statuses are `not_found`, `pending`, `done`, `failed`, or `interrupted`. Only `done` includes a reply. Checking status reads SQLite and never invokes Groq, waits for a conversation's agent lock, or creates a request. Unknown/deleted conversations return 404/410. A `not_found` result describes the current database view, not proof that an earlier network packet can never arrive; use the original UUID if explicitly retrying delivery.
+
+New Android clients send `require_existing:true` on chat requests. Missing conversation IDs then return 404 before any agent call instead of creating empty replacement history. The default remains false for older clients that used their fixed legacy ID. Deleted IDs always return 410.
+
+Groq 429 responses now include a bounded Retry-After delay in seconds (1–3600; default 30 if unavailable/invalid). Android displays it and requires explicit resend confirmation; it does not automatically create new inference requests.
+
+Health now also includes the API process `pid` for the local supervisor's authenticated readiness check. It does not measure provider quota or external tunnel availability. An exclusive process lock is held for the API lifespan in DATA_DIR/.atlas-api.lock. Duplicate startups fail before memory/session initialization; OS process exit releases the lock. Use a single API worker. Termux supervision/boot setup is documented in ../deployment/termux/README.md.
