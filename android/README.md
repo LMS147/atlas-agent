@@ -44,7 +44,7 @@ Pinned toolchain: Gradle 8.11.1, Android Gradle Plugin 8.9.2, Kotlin/Compose com
 
 The monorepo backend implements [the API contract](../docs/api.md). Configure backend/.env with a Groq key and a separate ATLAS_API_TOKEN, start `python -m backend.app` from the root, and expose it through an HTTPS tunnel. Enter the tunnel URL and Atlas token on the connection screen. See [setup](../docs/setup.md).
 
-Demo replies remain deterministic local examples. Live chat invokes the existing Groq agent, server histories persist in SQLite, and memory remains Markdown/GitHub-backed. File/profile views are read-only. Attachments, command execution, editing, hardware metrics, and conversation persistence is backed by the server API.
+Demo replies remain deterministic local examples. Live chat invokes the existing Groq agent, server histories persist in SQLite, and memory remains Markdown/GitHub-backed. Workspace files support upload/download and UTF-8 editing; the profile stays read-only. Memory management, available hardware metrics and conversation persistence use the authenticated server API. Attaching files to AI messages and executing commands remain future work.
 
 ## Data and credentials
 

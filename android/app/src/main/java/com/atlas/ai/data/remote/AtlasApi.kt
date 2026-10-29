@@ -18,6 +18,7 @@ interface AtlasApi {
  @GET("api/v1/agent") suspend fun agent(): AgentProfile
  @GET("api/v1/files") suspend fun files(@Query("directory") directory: String = ""): List<FileItem>
  @GET("api/v1/files/text") suspend fun document(@Query("path") path: String): FileDocument
+ @Streaming
  @GET("api/v1/files/content") suspend fun download(@Query("path") path: String): okhttp3.ResponseBody
  @POST("api/v1/files/upload") suspend fun upload(@Query("name") name: String, @Body content: okhttp3.RequestBody): FileItem
  @PUT("api/v1/files/text") suspend fun editFile(@Query("path") path: String, @Body body: FileEdit): FileItem

@@ -34,7 +34,7 @@ Termux has a managed termux-services/runit API service with a separate boot hook
 
 ## Remaining features
 
-Task/automation modules, hardware monitoring, file downloads/edits, multi-user accounts, permanent tunnel integration, and independent domain/data mapping remain future work. File/profile screens are read-only. Public /docs and /openapi.json describe the API; workspace routes require the Atlas token.
+Task/automation modules, multi-user accounts, permanent tunnel integration, and independent domain/data mapping remain future work. Workspace file editing, memory management and monitoring are described below; the canonical profile stays read-only. Public /docs and /openapi.json describe the API; workspace routes require the Atlas token.
 
 Reserved directories use .gitkeep or Python __init__.py. Their presence does not indicate a completed feature.
 

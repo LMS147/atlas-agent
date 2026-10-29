@@ -10,7 +10,7 @@ Every `/api/v1/*` route requires `Authorization: Bearer <ATLAS_API_TOKEN>`, incl
 
 | Method | Route | Response |
 |---|---|---|
-| GET | `/api/v1/health` | `{"status":"ok","version":"0.4.0","uptime_seconds":120}` |
+| GET | `/api/v1/health` | `{"status":"ok","version":"0.5.0","uptime_seconds":120}` |
 | POST | `/api/v1/chat` | `{"reply":"Hello!"}` |
 | GET | `/api/v1/memory` | `[{"id":"stable-content-hash","section":"Projects","fact":"Build Atlas"}]` |
 | POST | `/api/v1/memory` | A memory object with `id`, `section`, `fact` |
@@ -47,7 +47,7 @@ Memory uses the existing Markdown/GitHub storage, not a second SQLite copy. Allo
 
 Facts are normalized, nonblank, and limited to 300 characters. Existing duplicate detection is retained. IDs are hashes of section and fact content, stable across reloads/reordering. Memory-full/rejected-save outcomes return 409. Local writes use file locks and atomic replacement so Telegram and the API can share the directory. For GitHub storage, its existing conditional writes can still conflict across separate hosts.
 
-The profile is read-only. `/files` lists only `agent.md`, `memory.md`, and the local `backups` folder when present. It omits symlinks, secrets, logs, the SQLite database, and arbitrary filesystem paths. In GitHub storage mode it lists the two Markdown files. File downloading/editing, task execution, and hardware monitoring are not implemented.
+The profile is read-only. `/files` lists canonical documents and the local `backups` and managed `workspace` folders. It omits symlinks, secrets, logs, the SQLite database, and arbitrary filesystem paths. File controls, memory maintenance and monitoring are documented below. Task execution remains future work.
 
 ## Errors
 

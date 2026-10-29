@@ -62,6 +62,8 @@ def list_files(directory=""):
     parent = workspace() if directory == "workspace" else memory.BACKUP_DIR
     if parent.is_symlink():
         raise HTTPException(403, "Symlinks are not exposed")
+    if not parent.is_dir():
+        raise HTTPException(404, "Directory not found")
     return [dict(name=p.name, path=f"{directory}/{p.name}", directory=False, size_bytes=p.stat().st_size, writable=directory == "workspace")
             for p in sorted(parent.iterdir()) if not p.is_symlink() and p.is_file() and NAME.fullmatch(p.name)]
 
