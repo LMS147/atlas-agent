@@ -36,7 +36,7 @@ class ManagementTest {
  }
  @After fun close() {server.shutdown()}
 
- @Test fun uploadsAndDownloadsPreserveBinaryAndAuthenticate()=runBlocking {
+ @Test fun uploadsAndDownloadsPreserveBinaryAndAuthenticate()=runBlocking<Unit> {
   val bytes=byteArrayOf(0,1,2,-1)
   server.enqueue(json("""{"name":"test.bin","path":"workspace/test.bin","directory":false,"size_bytes":4,"writable":true}""",201))
   repo.upload("test.bin",bytes)
@@ -48,7 +48,7 @@ class ManagementTest {
   assertArrayEquals(bytes,repo.download("workspace/test.bin"))
   assertEquals("workspace/test.bin",server.takeRequest().requestUrl!!.queryParameter("path"))
  }
- @Test fun staleFileSavePropagatesConflictAndKeepsOriginalRevision()=runBlocking {
+ @Test fun staleFileSavePropagatesConflictAndKeepsOriginalRevision()=runBlocking<Unit> {
   val revision="a".repeat(64)
   server.enqueue(json("""{"path":"workspace/a.txt","content":"old","revision":"$revision","writable":true}"""))
   val doc=repo.document("workspace/a.txt")
@@ -60,7 +60,7 @@ class ManagementTest {
   assertTrue(request.body.readUtf8().contains(revision))
   assertEquals("old",doc.content)
  }
- @Test fun memoryMutationsRefreshCacheAndCompactionUsesPreviewRevision()=runBlocking {
+ @Test fun memoryMutationsRefreshCacheAndCompactionUsesPreviewRevision()=runBlocking<Unit> {
   server.enqueue(MockResponse().setResponseCode(204))
   server.enqueue(json("""[{"id":"updated","section":"People","fact":"New fact"}]"""))
   repo.editMemory("old","People","New fact")
@@ -75,7 +75,7 @@ class ManagementTest {
   server.enqueue(json(plan));server.enqueue(json("[]"));repo.compact(preview.revision)
   assertTrue(server.takeRequest().body.readUtf8().contains(preview.revision));server.takeRequest()
  }
- @Test fun monitoringKeepsUnavailableMetricsNull()=runBlocking {
+ @Test fun monitoringKeepsUnavailableMetricsNull()=runBlocking<Unit> {
   server.enqueue(json("""{"sampled_at":123,"device_cpu_percent":null,"process_cpu_percent":1.5,"ram":null,"process_rss_bytes":null,"storage":{"total_bytes":1000,"used_bytes":400,"free_bytes":600},"device_uptime_seconds":null,"service":{"pid":42,"uptime_seconds":12,"threads":3,"requests":8,"errors":1,"active_requests":1},"unavailable":["device CPU","device RAM"]}"""))
   val metrics=repo.monitoring()
   assertNull(metrics.device_cpu_percent);assertNull(metrics.ram);assertEquals(42,metrics.service.pid)
