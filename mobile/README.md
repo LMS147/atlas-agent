@@ -1,6 +1,6 @@
 # Atlas MAUI Blazor Hybrid
 
-Atlas Hybrid 0.7.1 is the new C# client. Open **mobile/Atlas.sln** in Visual Studio with .NET 10 and the .NET MAUI workload. Android is the first installable target; the Windows host is also compiled in CI. iOS/Mac Catalyst targets have not been added or tested.
+Atlas 0.7.2 is the new C# client. Open **mobile/Atlas.sln** in Visual Studio with .NET 10 and the .NET MAUI workload. Android is the first installable target; the Windows host is also compiled in CI. iOS/Mac Catalyst targets have not been added or tested.
 
 | Project | Responsibility |
 | --- | --- |
@@ -34,7 +34,7 @@ The setup screen pre-fills `https://atlas-api-a9s1.onrender.com/`, but the URL i
 
 ## Migration and feature status
 
-The new Android package is **com.atlas.ai.hybrid**, displayed as **Atlas Hybrid**. It installs alongside **com.atlas.ai** (Kotlin). Both clients remain in this repository during migration. Do not uninstall the old app to install this one.
+The new Android package is **com.atlas.ai.hybrid**, displayed as **Atlas**. It installs alongside **com.atlas.ai** (Kotlin). Both clients remain in this repository during migration. Do not uninstall the old app to install this one.
 
 Implemented: authenticated HTTPS setup; secure optional token restore; named conversations; rename/delete confirmations; selected conversation; paged server history; per-workspace SQLite cache; cached offline opening; durable message state; read-only reply checks; confirmed same-ID delivery retries and fresh requests; memory list/search/filter/create/edit/delete/compaction previews; workspace file upload/download/text editing with revisions; read-only canonical documents/profile; actual monitoring with nullable restricted metrics and foreground-only polling.
 

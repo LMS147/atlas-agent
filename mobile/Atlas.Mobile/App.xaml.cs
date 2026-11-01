@@ -6,7 +6,7 @@ public partial class App : Application
     public App(MainPage page,AppState state){InitializeComponent();this.page=page;this.state=state;}
     protected override Window CreateWindow(IActivationState? activationState)
     {
-        var window=new Window(page){Title="Atlas Hybrid"};
+        var window=new Window(page){Title="Atlas"};
         window.Stopped+=(_,_)=>state.IsActive=false;
         window.Deactivated+=(_,_)=>state.IsActive=false;
         window.Resumed+=(_,_)=>state.IsActive=true;

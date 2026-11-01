@@ -6,7 +6,7 @@
 <div class="app-shell @(State.Connected ? "connected" : "welcome")">
     <header class="app-header" inert="@(State.DrawerOpen ? "" : null)">
         @if(State.Connected){<button id="workspace-menu-button" class="header-menu" aria-label="Open workspace menu" aria-controls="workspace-drawer" aria-expanded="@State.DrawerOpen" @onclick='()=>OpenDrawer("workspace-menu-button")'><AtlasIcon Name="menu" /></button>}
-        <div class="brand"><img class="atlas-avatar brand-avatar" src="_content/Atlas.UI/atlas/avatar.webp" alt="" width="40" height="40" /><div><strong>Atlas<span class="brand-ai"> AI</span></strong><small>Your personal workspace</small></div></div>
+        <div class="brand"><img class="atlas-avatar brand-avatar" src="_content/Atlas.UI/atlas/avatar.webp" alt="" width="40" height="40" /><div><strong>Atlas</strong><small>Your personal workspace</small></div></div>
         <span class="connection-status @(State.Connected ? State.Repo.Offline ? "offline" : "online" : "")"><span class="status-dot"></span>@(State.Connected ? State.Repo.Offline ? "Offline cache" : "Connected" : "Ready to connect")</span>
     </header>
     @if(State.Connected)
@@ -46,7 +46,7 @@
         <aside id="workspace-drawer" class="workspace-drawer" role="dialog" aria-modal="true" aria-label="Workspace menu" @ref="drawer" @onkeydown="DrawerKey">
             <div class="drawer-brand">
                 <button class="drawer-close" aria-label="Close menu" @onclick="CloseDrawer"><AtlasIcon Name="close" /></button>
-                <svg class="drawer-logo" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="atlas-drawer-gradient" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#55bcff"/><stop offset="1" stop-color="#8463ff"/></linearGradient></defs><path fill="url(#atlas-drawer-gradient)" d="M50 5 94 91Q96 97 89 96L75 93 50 43 25 93 11 96Q4 97 6 91Z"/></svg>
+                <img class="drawer-logo" src="_content/Atlas.UI/atlas/avatar.webp" alt="" width="70" height="70" />
                 <h2>Atlas</h2><p>@(State.Repo.Offline ? "Offline workspace" : "Personal workspace")</p>
             </div>
             <nav class="drawer-navigation" aria-label="Workspace pages">
