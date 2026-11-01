@@ -17,7 +17,7 @@ async def main():
    page=await browser.new_page(viewport={'width':width,'height':height},device_scale_factor=1)
    for name in ['setup','chat','conversation','settings','drawer']:
     await page.goto(f'{origin}/{name}.html')
-    await page.screenshot(path=str(ROOT/f'{name}-{width}.png'),full_page=True)
+    await page.screenshot(path=str(ROOT/f'{name}-{width}.png'),full_page=True,animations='disabled')
     problems=await page.evaluate('''() => ({overflow:document.documentElement.scrollWidth>innerWidth,controls:[...document.querySelectorAll('input,button,textarea,select')].filter(e=>e.getBoundingClientRect().width>0&&e.getBoundingClientRect().right>innerWidth+1).map(e=>e.outerHTML.slice(0,100))})''')
     print(name,width,problems)
     if name!='setup':
@@ -27,6 +27,8 @@ async def main():
      assert abs(box['y']+box['height']-height)<2, (name,width,box)
     if name=='drawer':
      assert await page.locator('[role="dialog"][aria-label="Workspace menu"]').is_visible()
+     drawer_box=await page.locator('.workspace-drawer').bounding_box()
+     assert abs(drawer_box['x'])<1, drawer_box
      assert await page.locator('.drawer-navigation button').count()==8
      assert await page.locator('.drawer-navigation .active').inner_text()=='Settings'
      assert await page.locator('main').get_attribute('inert') is not None
