@@ -34,7 +34,10 @@ jobs:
         with:
           python-version: '3.12'
       - run: dotnet run --project mobile/tests/Atlas.VisualChecks/Atlas.VisualChecks.csproj --configuration Release -- visual-results
-      - run: cp mobile/Atlas.UI/wwwroot/atlas.css visual-results/atlas.css
+      - run: |
+          cp mobile/Atlas.UI/wwwroot/atlas.css visual-results/atlas.css
+          mkdir -p visual-results/_content/Atlas.UI
+          cp -R mobile/Atlas.UI/wwwroot/. visual-results/_content/Atlas.UI/
       - run: pip install playwright==1.55.0
       - run: python mobile/tests/visual_check.py visual-results
       - uses: actions/upload-artifact@v4

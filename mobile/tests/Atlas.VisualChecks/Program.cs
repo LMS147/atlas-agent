@@ -21,6 +21,9 @@ cache.Put(repo.Scope,"messages","m1",new LocalMessage("m1","c1","r1","user","Hel
 cache.Put(repo.Scope,"messages","m2",new LocalMessage("m2","c1","r1","assistant","Let’s start with the outcome. What would you like to accomplish, and what does a successful first version look like?",2));
 await renderer.Dispatcher.InvokeAsync(state.Notify);await Save("conversation");
 await renderer.Dispatcher.InvokeAsync(()=>state.NavigateAsync("Settings"));await Save("settings");
+await File.WriteAllTextAsync(Path.Combine(output,"3d.html"),"""
+<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="atlas.css"></head><body><div class="atlas-character"><div id="stage" class="atlas-stage"><canvas id="canvas"></canvas></div></div><script type="module">import {buildAtlas} from './_content/Atlas.UI/atlas-3d.js';window.atlas=buildAtlas(document.getElementById('canvas'),document.getElementById('stage'));</script></body></html>
+""");
 sealed class Mock:HttpMessageHandler{protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage req,CancellationToken ct){object value=req.RequestUri!.AbsolutePath.EndsWith("health")?new Health("ok"):new[]{new Conversation("c1","A fresh perspective",1,1,0,"")};return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK){Content=JsonContent.Create(value,options:AtlasApi.Json)});}}
 sealed class Creds:ICredentialStore{public Task<Credentials?> LoadAsync()=>Task.FromResult<Credentials?>(null);public Task SaveAsync(Credentials c)=>Task.CompletedTask;public void Clear(){}}
 sealed class Files:IDeviceFiles{public Task<(string Name,byte[] Content)?> PickAsync()=>Task.FromResult<(string,byte[])?>(null);public Task SaveAsync(string n,byte[] b)=>Task.CompletedTask;public Task<bool> ConfirmAsync(string t,string m)=>Task.FromResult(false);}

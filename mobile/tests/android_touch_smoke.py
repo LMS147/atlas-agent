@@ -70,10 +70,19 @@ try:
     cdp = CDP(until(target)['webSocketDebuggerUrl'])
     until(lambda: cdp.evaluate("!!document.querySelector('#token:not(:disabled)')"))
     # Obtain native WebView offset (status bar is outside the DOM viewport).
-    adb('shell', 'uiautomator', 'dump', '/sdcard/window.xml')
-    tree = ET.fromstring(adb('shell', 'cat', '/sdcard/window.xml'))
-    view = next(n for n in tree.iter('node') if n.get('class') == 'android.webkit.WebView')
-    left, top, _, _ = map(int, re.findall(r'\d+', view.attrib['bounds']))
+    def webview_origin():
+        adb('shell', 'uiautomator', 'dump', '/sdcard/window.xml')
+        tree = ET.fromstring(adb('shell', 'cat', '/sdcard/window.xml'))
+        view = next(n for n in tree.iter('node') if n.get('class') == 'android.webkit.WebView')
+        left, top, _, _ = map(int, re.findall(r'\d+', view.attrib['bounds']))
+        return left, top
+    left, top = until(webview_origin, 60)
+    # Exercise the bundled 3D module through Blazor before any server login.
+    cdp.evaluate("document.querySelector('.meet-atlas').click()")
+    until(lambda: cdp.evaluate("!!document.querySelector('[data-atlas-ready=\"true\"]') || document.body.innerText.includes(\"3D isn't available\")"), 45)
+    print('Atlas native WebGL ready:', cdp.evaluate("!!document.querySelector('[data-atlas-ready=\"true\"]')"))
+    cdp.evaluate("document.querySelector('[aria-label=\"Close Atlas preview\"]').click()")
+    until(lambda: cdp.evaluate("!document.querySelector('.companion-dialog')"))
 
     def tap(selector):
         # Scrolling is only to position a control; input/click events come from ADB touches.

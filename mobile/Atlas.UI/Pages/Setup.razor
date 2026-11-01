@@ -1,9 +1,10 @@
 <section class="setup page">
     <div class="setup-intro">
         <span class="eyebrow"><span class="tiny-line"></span> YOUR PERSONAL AI WORKSPACE</span>
-        <div class="welcome-symbol"><AtlasIcon Name="spark" /></div>
+        <img class="setup-mascot" src="_content/Atlas.UI/atlas/mascot.webp" alt="Atlas, your cyan-eyed hooded AI companion" width="180" height="270" />
         <h1>A little more clarity.<br /><span class="accent-text">A lot more possibility.</span></h1>
         <p class="setup-description">A place to think, create, and get things done. Connect your Atlas server to make it yours.</p>
+        <button class="meet-atlas" @onclick="()=>showCompanion=true"><AtlasIcon Name="profile" /> Meet Atlas in 3D</button>
         <div class="setup-benefits"><span><AtlasIcon Name="chat" /> Conversations that continue</span><span><AtlasIcon Name="memory" /> Context that stays with you</span><span><AtlasIcon Name="lock" /> A workspace you control</span></div>
     </div>
     <div class="setup-panel">
@@ -20,7 +21,10 @@
         <p class="security-note"><AtlasIcon Name="lock" /><span>Saved credentials are protected by your device's secure storage.</span></p>
     </div>
 </section>
+@if(showCompanion){<div class="dialog-backdrop"><section class="dialog companion-dialog" role="dialog" aria-modal="true" aria-label="Meet Atlas"><div class="page-heading"><h2>Meet Atlas</h2><button aria-label="Close Atlas preview" @onclick="CloseCompanion">Close</button></div><AtlasCharacter /><div class="companion-actions"><button disabled="@(!State.SpeechAvailable || State.Speaking || !State.IsActive)" @onclick="Hello">Say hello</button>@if(State.Speaking){<button @onclick="State.StopSpeaking">Stop voice</button>}</div><p class="companion-note muted">Drag to turn him. Voice plays only when you ask.</p></section></div>}
 @code {
-    private string token="";private bool remember=true,showToken;
+    private string token="";private bool remember=true,showToken,showCompanion;
+    private void CloseCompanion(){State.StopSpeaking();showCompanion=false;}
+    private Task Hello()=>State.SpeakAsync("Hello. I am Atlas, your personal AI companion. Let us turn your ideas into something real.");
     private async Task Connect(){if(await State.ConnectAsync(token,remember))token="";}
 }

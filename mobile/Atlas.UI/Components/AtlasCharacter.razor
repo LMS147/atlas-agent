@@ -1,0 +1,46 @@
+@implements IAsyncDisposable
+@inject IServiceProvider Services
+<div class="atlas-character @(Compact ? "compact" : "")">
+    <div class="atlas-stage" @ref="stage">
+        <canvas @ref="canvas" tabindex="0" role="img" aria-label="Interactive 3D Atlas. Drag or use left and right arrows to turn him."></canvas>
+        @if(!ready){<img class="character-fallback" src="_content/Atlas.UI/atlas/mascot.webp" alt="Atlas AI companion" />}
+        <span class="character-floor" aria-hidden="true"></span>
+    </div>
+    <div class="character-state"><span class="status-dot"></span>@(State.Speaking?"Speaking":State.Busy?"Working with you":ready?"Here with you":"Atlas")</div>
+    @if(!Compact){<div class="character-controls"><button disabled="@(!ready)" @onclick="Wave">Wave</button><button disabled="@(!ready)" @onclick="Reset">Reset view</button></div>}
+    @if(failed){<small class="muted">3D isn't available on this device. Atlas's portrait is shown instead.</small>}
+</div>
+@code {
+    [Parameter] public bool Compact {get;set;}
+    private ElementReference canvas,stage;
+    private IJSObjectReference? module,character;
+    private bool ready,failed,disposed;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if(disposed || failed)return;
+        try
+        {
+            if(firstRender)
+            {
+                var js=Services.GetService(typeof(IJSRuntime)) as IJSRuntime ?? throw new InvalidOperationException("JavaScript is unavailable.");
+                module=await js.InvokeAsync<IJSObjectReference>("import","./_content/Atlas.UI/atlas-3d.js");
+                if(disposed){await module.DisposeAsync();module=null;return;}
+                character=await module.InvokeAsync<IJSObjectReference>("createAtlas",canvas,stage);
+                if(disposed){await character.InvokeVoidAsync("dispose");await character.DisposeAsync();character=null;await module.DisposeAsync();module=null;return;}
+                ready=true;await InvokeAsync(StateHasChanged);
+            }
+            if(character is not null)await character.InvokeVoidAsync("setState",State.Speaking?"speaking":State.Busy?"thinking":"idle",State.IsActive);
+        }
+        catch(JSException){failed=true;ready=false;await InvokeAsync(StateHasChanged);}
+        catch(InvalidOperationException){failed=true;ready=false;await InvokeAsync(StateHasChanged);}
+    }
+    private async Task Wave(){if(character is not null)await character.InvokeVoidAsync("wave");}
+    private async Task Reset(){if(character is not null)await character.InvokeVoidAsync("reset");}
+    public async ValueTask DisposeAsync()
+    {
+        disposed=true;
+        try{if(character is not null){await character.InvokeVoidAsync("dispose");await character.DisposeAsync();}if(module is not null)await module.DisposeAsync();}
+        catch(JSException){}
+        catch(InvalidOperationException){}
+    }
+}

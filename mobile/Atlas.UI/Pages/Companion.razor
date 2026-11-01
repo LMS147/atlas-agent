@@ -1,0 +1,16 @@
+<section class="page companion-page">
+    <span class="eyebrow">MEET YOUR COMPANION</span><h1>This is Atlas.</h1>
+    <p class="muted">Your ideas. A familiar face. A voice when you need it.</p>
+    <AtlasCharacter />
+    <div class="companion-actions">
+        <button class="primary" disabled="@(!State.SpeechAvailable || State.Speaking || !State.IsActive)" @onclick="Hello">Say hello</button>
+        <button disabled="@(!State.SpeechAvailable || State.Speaking || LatestReply is null || !State.IsActive)" @onclick="ReadLatest">Read latest reply</button>
+        @if(State.Speaking){<button class="danger" @onclick="State.StopSpeaking">Stop voice</button>}
+    </div>
+    <p class="companion-note muted">Drag Atlas to look around. Voice uses your device's text-to-speech settings and only plays when you ask.</p>
+</section>
+@code {
+    private string? LatestReply=>State.Repo.Messages.LastOrDefault(x=>x.Role=="assistant")?.Text;
+    private Task Hello()=>State.SpeakAsync("Hello. I'm Atlas, your personal AI companion. Bring me an idea, a question, or a challenge. Let's make something meaningful together.");
+    private Task ReadLatest()=>LatestReply is null?Task.CompletedTask:State.SpeakAsync(LatestReply);
+}

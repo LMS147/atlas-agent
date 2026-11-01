@@ -2,13 +2,32 @@ using Atlas.Core;
 namespace Atlas.UI;
 
 /// <summary>Shared C# presentation state; native capabilities are injected at the host.</summary>
-public sealed class AppState(AtlasRepository repository, ICredentialStore credentials, IDeviceFiles files)
+public sealed class AppState(AtlasRepository repository, ICredentialStore credentials, IDeviceFiles files, IAtlasSpeech? speech = null)
 {
     public AtlasRepository Repo { get; } = repository;
     public IDeviceFiles DeviceFiles { get; } = files;
     public event Action? Changed;
     public bool Busy { get; private set; }
-    public bool IsActive { get; set; } = true;
+    private bool active=true;
+    public bool IsActive { get=>active; set {if(active==value)return;active=value;if(!value)StopSpeaking();Notify();} }
+    private CancellationTokenSource? speechStop;
+    public bool Speaking=>speechStop is not null;
+    public bool SpeechAvailable=>speech is not null;
+    public void StopSpeaking()=>speechStop?.Cancel();
+    public async Task SpeakAsync(string text)
+    {
+        if(!IsActive || speechStop is not null || string.IsNullOrWhiteSpace(text))return;
+        if(speech is null){Success("Voice playback is unavailable in this host.");return;}
+        var stop=new CancellationTokenSource();speechStop=stop;Notify();
+        try
+        {
+            if(text.Length>6000){text=text[..6000];Notice="Reading the first 6,000 characters. You can stop playback at any time.";Notify();}
+            await speech.SpeakAsync(text,stop.Token);
+        }
+        catch(OperationCanceledException) when(stop.IsCancellationRequested){}
+        catch(Exception){Notice="Voice playback is unavailable. Check that a text-to-speech voice is installed on your device.";}
+        finally{speechStop=null;stop.Dispose();Notify();}
+    }
     public string? Error { get; private set; }
     public string? Notice { get; private set; }
     public Func<Task<bool>>? BackHandler { get; set; }
@@ -52,6 +71,7 @@ public sealed class AppState(AtlasRepository repository, ICredentialStore creden
     });
     public Task<bool> NavigateAsync(string page)=>Run(async()=>
     {
+        if(page is not ("Chat" or "Atlas"))StopSpeaking();
         Page=page;
         if(page=="Conversations")await Repo.RefreshConversationsAsync();
         if(page=="Memory")await Repo.RefreshMemoryAsync();
@@ -60,6 +80,6 @@ public sealed class AppState(AtlasRepository repository, ICredentialStore creden
     public void Disconnect()
     {
         if(Busy)return;
-        credentials.Clear();Repo.Disconnect();Page="Setup";Error=null;Notice=null;Notify();
+        StopSpeaking();credentials.Clear();Repo.Disconnect();Page="Setup";Error=null;Notice=null;Notify();
     }
 }

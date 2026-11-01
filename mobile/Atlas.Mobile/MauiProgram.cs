@@ -15,6 +15,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<AtlasRepository>();
         builder.Services.AddSingleton<ICredentialStore,DeviceCredentials>();
         builder.Services.AddSingleton<IDeviceFiles,DeviceFiles>();
+        builder.Services.AddSingleton<IAtlasSpeech,DeviceSpeech>();
         builder.Services.AddSingleton<AppState>();builder.Services.AddSingleton<MainPage>();
         return builder.Build();
     }

@@ -4,7 +4,7 @@
 <CascadingValue Value="State" IsFixed="false">
 <div class="app-shell @(State.Connected ? "connected" : "welcome")">
     <header class="app-header">
-        <div class="brand"><span class="brand-mark" aria-hidden="true">A<span class="brand-dot"></span></span><div><strong>Atlas<span class="brand-ai"> AI</span></strong><small>Your personal workspace</small></div></div>
+        <div class="brand"><img class="atlas-avatar brand-avatar" src="_content/Atlas.UI/atlas/avatar.webp" alt="" width="40" height="40" /><div><strong>Atlas<span class="brand-ai"> AI</span></strong><small>Your personal workspace</small></div></div>
         <span class="connection-status @(State.Connected ? State.Repo.Offline ? "offline" : "online" : "")"><span class="status-dot"></span>@(State.Connected ? State.Repo.Offline ? "Offline cache" : "Connected" : "Ready to connect")</span>
     </header>
     @if(State.Connected)
@@ -28,6 +28,7 @@
             @switch(State.Page)
             {
                 case "Chat":<Chat />break;
+                case "Atlas":<Companion />break;
                 case "Conversations":<Conversations />break;
                 case "Memory":<Memory />break;
                 case "Files":<Files />break;
@@ -40,10 +41,10 @@
 </div>
 </CascadingValue>
 @code {
-    private readonly string[] pages=["Chat","Conversations","Memory","Files","Monitoring","Profile","Settings"];
+    private readonly string[] pages=["Chat","Atlas","Conversations","Memory","Files","Monitoring","Profile","Settings"];
     protected override async Task OnInitializedAsync(){State.Changed+=OnChanged;await State.InitializeAsync();}
     private void OnChanged()=>_ = InvokeAsync(StateHasChanged);
     private Task Navigate(string page)=>State.NavigateAsync(page);
-    private static string PageIcon(string page)=>page switch {"Chat"=>"chat","Conversations"=>"history","Memory"=>"memory","Files"=>"files","Monitoring"=>"monitor","Profile"=>"profile",_=>"settings"};
+    private static string PageIcon(string page)=>page switch {"Atlas"=>"spark","Chat"=>"chat","Conversations"=>"history","Memory"=>"memory","Files"=>"files","Monitoring"=>"monitor","Profile"=>"profile",_=>"settings"};
     public void Dispose()=>State.Changed-=OnChanged;
 }
