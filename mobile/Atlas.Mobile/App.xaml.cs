@@ -8,6 +8,7 @@ public partial class App : Application
     {
         var window=new Window(page){Title="Atlas Hybrid"};
         window.Stopped+=(_,_)=>state.IsActive=false;
+        window.Deactivated+=(_,_)=>state.IsActive=false;
         window.Resumed+=(_,_)=>state.IsActive=true;
         window.Activated+=(_,_)=>state.IsActive=true;
         window.Destroying+=(_,_)=>state.IsActive=false;

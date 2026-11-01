@@ -28,9 +28,11 @@ public sealed class AtlasApi : IDisposable
     }
     public async Task<T> JsonAsync<T>(HttpMethod method, string path, object? body = null, CancellationToken ct = default)
     {
-        using var response = await SendAsync(method, path, body is null ? null : JsonContent.Create(body, options: Json), ct);
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeout.CancelAfter(TimeSpan.FromSeconds(100));
+        using var response = await SendAsync(method, path, body is null ? null : JsonContent.Create(body, options: Json), timeout.Token);
         if (response.StatusCode == HttpStatusCode.NoContent) return default!;
-        return await response.Content.ReadFromJsonAsync<T>(Json, ct) ?? throw new IOException("Atlas returned an empty response.");
+        return await response.Content.ReadFromJsonAsync<T>(Json, timeout.Token) ?? throw new IOException("Atlas returned an empty response.");
     }
     public async Task EmptyAsync(HttpMethod method, string path, object? body = null)
     {
@@ -60,16 +62,17 @@ public sealed class AtlasApi : IDisposable
     }
     public async Task<byte[]> DownloadAsync(string path)
     {
-        using var response = await SendAsync(HttpMethod.Get, "files/content?path=" + Uri.EscapeDataString(path), null, default);
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(100));
+        using var response = await SendAsync(HttpMethod.Get, "files/content?path=" + Uri.EscapeDataString(path), null, timeout.Token);
         using var stream = await response.Content.ReadAsStreamAsync();
-        return await ReadBoundedAsync(stream);
+        return await ReadBoundedAsync(stream, timeout.Token);
     }
-    public static async Task<byte[]> ReadBoundedAsync(Stream stream)
+    public static async Task<byte[]> ReadBoundedAsync(Stream stream, CancellationToken ct = default)
     {
         using var output = new MemoryStream();
         var buffer = new byte[8192];
         int count;
-        while ((count = await stream.ReadAsync(buffer)) != 0)
+        while ((count = await stream.ReadAsync(buffer, ct)) != 0)
         {
             if (output.Length + count > MaxFileBytes) throw new ArgumentException("File exceeds 5 MiB.");
             output.Write(buffer, 0, count);

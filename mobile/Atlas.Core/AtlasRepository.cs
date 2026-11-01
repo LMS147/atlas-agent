@@ -36,7 +36,7 @@ public sealed class AtlasRepository(CacheStore cache, Func<string,string,AtlasAp
                 if(!rows.Any(x=>!x.Deleted) && previous.Count==0)
                     rows.Add(await candidate.JsonAsync<Conversation>(HttpMethod.Post,"conversations",new {title="New chat"}));
             }
-            catch(Exception e) when(e is HttpRequestException or TaskCanceledException)
+            catch(Exception e) when(e is HttpRequestException or OperationCanceledException)
             {
                 if(previous.Count==0)throw;
                 offline=true;
@@ -226,7 +226,7 @@ public sealed class AtlasRepository(CacheStore cache, Func<string,string,AtlasAp
     public static string Friendly(Exception e)=>e switch
     {
         AtlasApiException or ArgumentException or InvalidOperationException=>e.Message,
-        HttpRequestException or TaskCanceledException=>"Connection interrupted. Check the server/tunnel, then check for the existing reply.",
+        HttpRequestException or OperationCanceledException=>"Connection interrupted. Check the server/tunnel, then check for the existing reply.",
         _=>"Atlas could not complete the operation. Your saved data is retained."
     };
     public void Dispose(){api?.Dispose();chatGate.Dispose();}

@@ -18,7 +18,7 @@
     protected override Task OnInitializedAsync(){State.BackHandler=Back;return Load("");}
     private async Task<bool> Back()
     {
-        if(document is not null){await Close();return true;}
+        if(document is not null){await Close();await InvokeAsync(StateHasChanged);return true;}
         if(upload is not null){upload=null;await InvokeAsync(StateHasChanged);return true;}
         return false;
     }

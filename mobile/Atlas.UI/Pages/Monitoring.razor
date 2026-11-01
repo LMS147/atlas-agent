@@ -14,7 +14,7 @@
     private Atlas.Core.Monitoring? sample;private readonly CancellationTokenSource stop=new();
     protected override async Task OnInitializedAsync(){await Refresh();_ = Poll();}
     private Task Refresh()=>State.Run(async()=>sample=await State.Repo.MonitoringAsync());
-    private async Task Poll(){try{using var timer=new PeriodicTimer(TimeSpan.FromSeconds(10));while(await timer.WaitForNextTickAsync(stop.Token))if(!State.Busy && State.IsActive)await InvokeAsync(Refresh);}catch(OperationCanceledException){}}
+    private async Task Poll(){var token=stop.Token;try{using var timer=new PeriodicTimer(TimeSpan.FromSeconds(10));while(await timer.WaitForNextTickAsync(token))if(!State.Busy && State.IsActive)await InvokeAsync(Refresh);}catch(OperationCanceledException){}}
     private static string Bytes(long? value)=>value is null?"Unavailable":$"{value/1048576.0:N1} MiB";
     private static string Percent(double? value)=>value is null?"Unavailable":$"{value:N1}%";
     public void Dispose(){stop.Cancel();stop.Dispose();}

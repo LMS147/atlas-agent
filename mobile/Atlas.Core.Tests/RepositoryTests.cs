@@ -107,6 +107,28 @@ public sealed class RepositoryTests : IDisposable
         var revision=new string('a',64);await repo.EditFileAsync(new FileDocument("workspace/test.txt","old",revision,true),"new");
         var edit=JsonDocument.Parse(calls.Last().Body);Assert.Equal(revision,edit.RootElement.GetProperty("revision").GetString());
     }
+    [Fact] public async Task MemoryChangesRefreshThePersistentCacheAndCompactionUsesPreviewRevision()
+    {
+        using var repo=Repo();await Connect(repo);
+        var rows=new List<MemoryItem>();var revision=new string('b',64);
+        response=(request,body)=>
+        {
+            if(request.RequestUri!.AbsolutePath.EndsWith("memory/compact"))
+            {
+                if(request.Method==HttpMethod.Post)Assert.Equal(revision,JsonDocument.Parse(body).RootElement.GetProperty("revision").GetString());
+                return Json(new CompactPlan(revision,100,80,1));
+            }
+            if(request.Method==HttpMethod.Get)return Json(rows);
+            if(request.Method==HttpMethod.Delete){rows.Clear();return new HttpResponseMessage(HttpStatusCode.NoContent);}
+            var payload=JsonDocument.Parse(body).RootElement;
+            rows.Clear();rows.Add(new MemoryItem("saved",payload.GetProperty("section").GetString()!,payload.GetProperty("fact").GetString()!));
+            return request.Method==HttpMethod.Post?Json(rows.Single(),201):new HttpResponseMessage(HttpStatusCode.NoContent);
+        };
+        await repo.SaveMemoryAsync(null,"Projects","  Keep   this fact  ");Assert.Equal("Keep this fact",repo.Memories.Single().Fact);
+        await repo.SaveMemoryAsync("saved","People","Updated fact");Assert.Equal("People",Store().All<MemoryItem>(repo.Scope,"memory").Single().Section);
+        var preview=await repo.CompactPreviewAsync();await repo.CompactAsync(preview.Revision);
+        await repo.DeleteMemoryAsync("saved");Assert.Empty(repo.Memories);
+    }
     public void Dispose(){Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();if(Directory.Exists(directory))Directory.Delete(directory,true);}
     private sealed class Handler(Func<HttpRequestMessage,Task<HttpResponseMessage>> callback):HttpMessageHandler
     {
