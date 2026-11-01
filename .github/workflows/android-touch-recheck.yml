@@ -7,7 +7,7 @@ on:
       source_run_id:
         description: 'Successful native build run containing atlas-hybrid-android-apk'
         required: true
-        default: '41303364840'
+        default: '41308258828'
 permissions:
   contents: read
   actions: read
@@ -21,7 +21,7 @@ jobs:
         with:
           name: atlas-hybrid-android-apk
           path: apk
-          run-id: ${{ inputs.source_run_id || '41303364840' }}
+          run-id: ${{ inputs.source_run_id || '41308258828' }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/setup-python@v5
         with:
