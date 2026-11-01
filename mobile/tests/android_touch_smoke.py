@@ -92,8 +92,13 @@ try:
     time.sleep(.5)
     tap('#token')
     until(lambda: cdp.evaluate("document.activeElement.id === 'token'"), 10)
-    adb('shell', 'input', 'text', 'atlas-emulator-fake-token-1234567890')
-    assert cdp.evaluate("document.querySelector('#token').value") == 'atlas-emulator-fake-token-1234567890'
+    # A newly opened password IME replaces its input connection asynchronously.
+    # Wait for that transition and type at human speed rather than flooding key events.
+    time.sleep(1)
+    for character in 'atlas-emulator-fake-token-1234567890':
+        adb('shell', 'input', 'text', character)
+        time.sleep(.08)
+    until(lambda: cdp.evaluate("document.querySelector('#token').value") == 'atlas-emulator-fake-token-1234567890', 10)
     # Before blur, oninput must enable Connect. This catches the setup-screen regression.
     until(lambda: cdp.evaluate("!document.querySelector('button.primary').disabled"), 10)
     adb('shell', 'input', 'keyevent', '4')  # dismiss keyboard
@@ -109,6 +114,7 @@ finally:
         (OUT/'webview-events.json').write_text(json.dumps(cdp.events, indent=2))
         (OUT/'page.txt').write_text(str(cdp.evaluate('document.body.innerText')))
         (OUT/'page.html').write_text(str(cdp.evaluate('document.documentElement.outerHTML')))
+        (OUT/'input-state.json').write_text(json.dumps(cdp.evaluate("({focus:document.activeElement.id,tokenLength:document.querySelector('#token')?.value.length,server:document.querySelector('#server')?.value})")))
     (OUT/'logcat.txt').write_text(adb('logcat', '-d'))
     with (OUT/'screen.png').open('wb') as screenshot:
         subprocess.run(['adb', 'exec-out', 'screencap', '-p'], stdout=screenshot, check=False)
