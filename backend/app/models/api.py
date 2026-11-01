@@ -53,6 +53,7 @@ class FileItem(BaseModel):
     writable: bool = False
 
 class Health(BaseModel):
+    streaming_chat: bool = True
     status: str = "ok"
     version: str = "0.5.0"
     uptime_seconds: int
@@ -105,3 +106,4 @@ class FileEdit(BaseModel):
 class CompactRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     revision: str = Field(pattern=r"^[0-9a-f]{64}$")
+

@@ -4,6 +4,7 @@ import logging
 import os
 import threading
 import time
+from types import SimpleNamespace
 
 from groq import Groq, RateLimitError, APIStatusError
 
@@ -94,7 +95,7 @@ def compact_memory() -> tuple[int, int, str]:
     return len(current), len(new), new
 
 
-def run(history: list, user_text: str, *, raise_errors: bool = False, groq_api_key: str | None = None) -> tuple[str, list]:
+def run(history: list, user_text: str, *, raise_errors: bool = False, groq_api_key: str | None = None, on_event=None) -> tuple[str, list]:
     deadline = time.monotonic() + 75
     messages = (
         [{"role": "system", "content": build_system()}]  # rebuilt each turn
@@ -107,15 +108,13 @@ def run(history: list, user_text: str, *, raise_errors: bool = False, groq_api_k
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 raise TimeoutError("Agent deadline exceeded")
-            resp = get_client(groq_api_key).chat.completions.create(
-                model=MODEL,
-                messages=messages,
-                tools=TOOLS,
-                tool_choice="auto",
-                max_tokens=1500,
-                temperature=0.6,
-                timeout=min(25, remaining),
-            )
+            options = dict(model=MODEL, messages=messages, tools=TOOLS, tool_choice="auto",
+                           max_tokens=1500, temperature=0.6, timeout=min(25, remaining))
+            if on_event is None:
+                msg = get_client(groq_api_key).chat.completions.create(**options).choices[0].message
+            else:
+                msg = _stream_message(get_client(groq_api_key), options, on_event, deadline)
+
         except RateLimitError:
             if raise_errors:
                 raise
@@ -126,12 +125,14 @@ def run(history: list, user_text: str, *, raise_errors: bool = False, groq_api_k
             logging.error("Groq request failed with status %s", e.status_code)
             return f"Groq error {e.status_code}.", history
 
-        msg = resp.choices[0].message
 
         if not msg.tool_calls:
             reply = msg.content or "(empty response)"
             messages.append({"role": "assistant", "content": reply})
             return reply, messages[1:]  # strip system prompt from history
+
+        if on_event is not None:
+            on_event("thinking", "")
 
         # Rebuild the assistant turn by hand — model_dump() emits nulls Groq rejects
         messages.append({
@@ -174,3 +175,44 @@ def run(history: list, user_text: str, *, raise_errors: bool = False, groq_api_k
         raise RuntimeError("Agent tool loop exceeded")
     return "Tool loop exceeded.", messages[1:]
 
+
+
+
+def _stream_message(provider, options, emit, deadline):
+    """Assemble tool calls privately; only user-visible content is emitted."""
+    text, calls, finish = "", {}, None
+    emit("thinking", "")
+    with provider.chat.completions.create(**options, stream=True) as stream:
+        for chunk in stream:
+            if time.monotonic() > deadline:
+                raise TimeoutError("Agent deadline exceeded")
+            if not chunk.choices:
+                continue
+            if chunk.choices[0].finish_reason:
+                finish = chunk.choices[0].finish_reason
+            delta = chunk.choices[0].delta
+            if delta.content:
+                text += delta.content
+                if len(text) > 65536:
+                    raise RuntimeError("Reply exceeded limit")
+                if not calls:
+                    emit("replying", text)
+            for item in delta.tool_calls or []:
+                if item.index not in calls and len(calls) >= 16:
+                    raise RuntimeError("Too many tool calls")
+                call = calls.setdefault(item.index, dict(id="", name="", arguments=""))
+                if item.id: call["id"] = item.id
+                if item.function:
+                    call["name"] += item.function.name or ""
+                    call["arguments"] += item.function.arguments or ""
+                if len(call["arguments"]) > 65536:
+                    raise RuntimeError("Tool arguments exceeded limit")
+            if calls:
+                emit("thinking", "")
+    if finish not in {"stop", "tool_calls"}:
+        raise RuntimeError("Provider stream ended without a complete turn")
+    if calls and finish != "tool_calls":
+        raise RuntimeError("Incomplete tool calls")
+    tools = [SimpleNamespace(id=c["id"], function=SimpleNamespace(name=c["name"], arguments=c["arguments"]))
+             for _, c in sorted(calls.items())]
+    return SimpleNamespace(content=text or None, tool_calls=tools)

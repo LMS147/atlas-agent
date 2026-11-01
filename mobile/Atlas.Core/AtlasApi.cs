@@ -53,6 +53,54 @@ public sealed class AtlasApi : IDisposable
         }
         return response;
     }
+    public async Task<string> StreamChatAsync(object body,string requestId,Action<string,string> progress,CancellationToken ct=default)
+    {
+        using var timeout=CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeout.CancelAfter(TimeSpan.FromSeconds(100));
+        using var response=await SendAsync(HttpMethod.Post,"chat/stream",JsonContent.Create(body,options:Json),timeout.Token);
+        if(response.Content.Headers.ContentType?.MediaType!="text/event-stream")throw new IOException("Atlas returned an invalid stream. Check for the saved reply.");
+        using var input=await response.Content.ReadAsStreamAsync(timeout.Token);
+        using var reader=new StreamReader(input,System.Text.Encoding.UTF8);
+        string kind="";var data=new System.Text.StringBuilder();var line=new System.Text.StringBuilder();
+        var buffer=new char[2048];long received=0;
+        while(true)
+        {
+            var count=await reader.ReadAsync(buffer.AsMemory(),timeout.Token);
+            if(count==0)break;
+            received+=count;if(received>32*1024*1024)throw new IOException("Atlas stream exceeded limits. Check the saved reply.");
+            for(var i=0;i<count;i++)
+            {
+                var c=buffer[i];
+                if(c!='\n'){line.Append(c);if(line.Length>512*1024)throw new IOException("Stream event exceeded limits.");continue;}
+                var value=line.ToString().TrimEnd('\r');line.Clear();
+                if(value.Length==0)
+                {
+                    if(data.Length>0)
+                    {
+                        var e=JsonSerializer.Deserialize<ChatStreamEvent>(data.ToString(),Json)??throw new IOException("Invalid stream event.");
+                        if(e.RequestId!=requestId)throw new IOException("Stream request did not match this message.");
+                        if(kind=="complete")return !string.IsNullOrWhiteSpace(e.Reply)&&e.Reply.Length<=65536?e.Reply:throw new IOException("Invalid completed reply.");
+                        if(kind=="error")throw new AtlasApiException(e.Status??500);
+                        if(kind is "progress" or "status")
+                        {
+                            if(e.Phase is not ("thinking" or "replying") || (e.Text?.Length??0)>65536)throw new IOException("Invalid progress event.");
+                            progress(e.Phase,e.Text??"");
+                        }
+                    }
+                    kind="";data.Clear();
+                }
+                else if(value.StartsWith("event:",StringComparison.Ordinal))kind=value[6..].Trim();
+                else if(value.StartsWith("data:",StringComparison.Ordinal))
+                {
+                    data.Append(value[5..].TrimStart(' '));data.Append('\n');
+                    if(data.Length>512*1024)throw new IOException("Stream event exceeded limits.");
+                }
+            }
+        }
+        throw new IOException("Reply stream interrupted. Check for the saved reply before retrying.");
+    }
+    private sealed record ChatStreamEvent(string RequestId,string? Phase,string? Text,string? Reply,int? Status);
+
     public async Task UploadAsync(string name, byte[] bytes)
     {
         if (bytes.Length > MaxFileBytes) throw new ArgumentException("Uploads support up to 5 MiB.");

@@ -4,6 +4,7 @@ from functools import partial
 import logging
 import time
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from filelock import FileLock, Timeout
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response
@@ -12,10 +13,10 @@ from backend.app.config import Settings, load_settings
 from backend.app.api.routes import chat, memory, files, system, conversations
 from backend.app.repositories.sessions import SessionRepository
 from backend.app.services import memory_service
-from backend.app.services.chat_service import run_agent
+from backend.app.services.chat_service import run_agent, run_agent_stream
 
 
-def create_app(settings: Settings | None = None, agent_runner=None) -> FastAPI:
+def create_app(settings: Settings | None = None, agent_runner=None, streaming_runner=None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         config = settings or load_settings()
@@ -33,11 +34,16 @@ def create_app(settings: Settings | None = None, agent_runner=None) -> FastAPI:
                 return SessionRepository(config.data_dir / "atlas.sqlite3")
             app.state.sessions = await run_in_threadpool(initialize)
             app.state.agent_runner = agent_runner or partial(run_agent, api_key=config.groq_api_key)
+            app.state.streaming_runner = streaming_runner or partial(run_agent_stream, api_key=config.groq_api_key)
+            app.state.stream_slots = threading.BoundedSemaphore(4)
+            app.state.stream_pool = ThreadPoolExecutor(max_workers=4, thread_name_prefix="atlas-chat")
             app.state.started = time.monotonic()
             app.state.ready = True
             yield
         finally:
             app.state.ready = False
+            if hasattr(app.state, "stream_pool"):
+                await run_in_threadpool(app.state.stream_pool.shutdown, wait=True)
             lease.release()
 
     app = FastAPI(title="Atlas AI", version="0.5.0", lifespan=lifespan)
@@ -80,3 +86,4 @@ def create_app(settings: Settings | None = None, agent_runner=None) -> FastAPI:
     return app
 
 app = create_app()
+

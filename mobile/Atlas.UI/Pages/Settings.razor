@@ -1,6 +1,6 @@
 <section class="page"><span class="eyebrow">YOUR WORKSPACE</span><h1>Settings</h1><article class="card"><h2>Server connection</h2><p class="wrap">@State.Repo.Url</p><p class="muted">Your Atlas token is stored with MAUI secure storage when requested. The Groq key stays on the backend.</p><div class="toolbar"><button disabled="@State.Busy" @onclick="ChangeServer">Change server</button><button class="danger" disabled="@State.Busy" @onclick="Disconnect">Disconnect…</button></div></article>
 <article class="card"><h2>Local chat cache</h2><p>Clear messages for this conversation on this device. Server history can be restored with Refresh history.</p><button class="danger" disabled="@State.Busy" @onclick="Clear">Clear local messages…</button></article>
-<article class="card"><h2>Atlas 0.8.0</h2><p class="muted">A personal workspace for conversations, memories, and files, connected to the server you choose.</p></article></section>
+<article class="card"><h2>Atlas 0.9.0</h2><p class="muted">A personal workspace for conversations, memories, and files, connected to the server you choose.</p></article></section>
 @code {
     private Task ChangeServer()=>State.NavigateAsync("Setup");
     private async Task Disconnect(){if(await State.DeviceFiles.ConfirmAsync("Disconnect?","Remove this app's saved connection credentials? Cached chats remain isolated on this device."))State.Disconnect();}

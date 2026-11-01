@@ -69,7 +69,7 @@ Recommended order: permanent APK signing, backups and recovery, then real-device
 | Signing | Manual Release APK workflow, signature verification and permanent-key setup guide | Owner configures signing secrets; exercise release build and compatible-update test |
 | Backups | Offline full local workspace backup/verify/restore CLI, SQLite integrity checks, archive checksums and regression tests | Schedule protected copies, back up external GitHub memory separately, and run a production restore drill |
 | Device testing | Physical-device acceptance checklist | Execute on the owner's phone and real backend; record evidence |
-| Chat | Conversation title/recent-preview search, encoded fenced code blocks and processing status | Provider token streaming and richer formatting |
+| Chat | Live Groq reply streaming, saved-request recovery, title/recent-preview search, encoded code blocks and processing status | Real-provider/tunnel/device acceptance and richer formatting |
 | Accessibility | Visible focus, inherited control fonts, 44px minimum button height, wrapping toolbars and reduced-motion styles | TalkBack and large-text acceptance on physical devices |
 | Migration | Primary/legacy client guidance and data-preservation checklist | Supported Kotlin export/MAUI import flow |
 | Tools | Memory cleanup preview, revision-checked execution and native confirmation | Additional automation actions and task scheduling |
@@ -88,3 +88,7 @@ No open-source license has been selected. See LICENSE. The source is not granted
 
 The Android Files screen uploads/downloads documents through the system picker and opens UTF-8 workspace files for conflict-safe editing. The Memory screen edits/deletes saved facts and previews conservative, backed-up compaction. Server status samples real CPU/RAM/storage/uptime/API counters every ten seconds while visible, with explicit unavailable values for Android-restricted metrics. See [API contracts](docs/api.md) and [setup](docs/setup.md) for limits and operation.
 
+
+## Live chat streaming (0.9.0)
+
+The MAUI app displays live reply text from an updated API while keeping completed replies and duplicate-request protection in SQLite. Interrupted streams use the existing saved-reply status check. Older servers retain ordinary chat through capability negotiation. See [streaming protocol, limits and upgrade steps](docs/chat-streaming.md). Upgrade the backend and reconnect the app to enable streaming; this source update does not deploy the live server automatically.

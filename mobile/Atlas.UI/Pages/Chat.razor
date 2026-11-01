@@ -27,9 +27,15 @@
                 }
             </article>
         }
+        @if(State.Repo.StreamPhase!="" && State.Repo.Messages.Any(x=>x.Delivery==Delivery.Pending))
+        {
+            <article class="message assistant streaming-reply" aria-label="Reply in progress"><div class="bubble"><small>Atlas · @(State.Repo.StreamPhase=="thinking"?"Thinking":"Replying")</small>
+            @if(State.Repo.StreamText.Length>0){<MessageContent Text="@State.Repo.StreamText" />}else{<p>Preparing your reply…</p>}
+            <small class="muted">In progress · confirmed when saved</small></div></article>
+        }
     </div>
     @if(State.Speaking){<div class="speech-status" role="status">Atlas is speaking <button @onclick="State.StopSpeaking">Stop voice</button></div>}
-    @if(State.Busy && State.Repo.Messages.Any(x=>x.Delivery==Delivery.Pending)){<div class="chat-processing" role="status" aria-live="polite"><strong>Atlas is preparing your reply…</strong><span>You can leave the app. Check for the saved reply if the connection is interrupted.</span></div>}
+    @if(State.Busy && State.Repo.Messages.Any(x=>x.Delivery==Delivery.Pending)){<div class="chat-processing" role="status" aria-live="polite"><strong>@(State.Repo.StreamPhase=="replying"?"Atlas is replying…":"Atlas is preparing your reply…")</strong><span>You can leave the app. Check for the saved reply if the connection is interrupted.</span></div>}
     <form class="composer" @onsubmit="Send" @onsubmit:preventDefault>
         <textarea @bind="draft" @bind:event="oninput" rows="2" maxlength="8000" placeholder="Ask Atlas anything…" aria-label="Message" disabled="@State.Busy"></textarea>
         <button class="primary" type="submit" aria-label="Send message" disabled="@(State.Busy || string.IsNullOrWhiteSpace(draft) || State.Repo.Current?.ServerAvailable!=true || Unresolved)"><span>Send</span><AtlasIcon Name="send" /></button>

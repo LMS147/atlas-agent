@@ -1,6 +1,6 @@
 namespace Atlas.Core;
 
-public sealed record Health(string Status, string Version = "", long UptimeSeconds = 0);
+public sealed record Health(string Status, string Version = "", long UptimeSeconds = 0, bool StreamingChat = false);
 public sealed record Conversation(string Id, string Title, long CreatedAt, long UpdatedAt, int MessageCount, string Preview, bool Deleted = false)
 {
     public bool ServerAvailable { get; init; } = true;

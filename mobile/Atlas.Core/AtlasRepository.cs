@@ -5,6 +5,9 @@ namespace Atlas.Core;
 public sealed class AtlasRepository(CacheStore cache, Func<string,string,AtlasApi>? factory = null) : IDisposable
 {
     private AtlasApi? api;
+    public bool StreamingChat { get; private set; }
+    public string StreamText { get; private set; } = "";
+    public string StreamPhase { get; private set; } = "";
     public event Action? Changed;
     private readonly SemaphoreSlim chatGate = new(1,1);
     public string Scope { get; private set; } = "";
@@ -27,10 +30,11 @@ public sealed class AtlasRepository(CacheStore cache, Func<string,string,AtlasAp
             candidate=factory?.Invoke(url,token) ?? new AtlasApi(url,token);
             var scope=Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(candidate.Url+"\n"+token.Trim())));
             var previous=cache.All<Conversation>(scope,"conversations");
-            List<Conversation>? rows=null; var offline=false;
+            List<Conversation>? rows=null; var offline=false; var streaming=false;
             try
             {
                 var health=await candidate.JsonAsync<Health>(HttpMethod.Get,"health");
+                streaming=health.StreamingChat;
                 if(health.Status!="ok")throw new IOException("Atlas is not ready.");
                 rows=await candidate.JsonAsync<List<Conversation>>(HttpMethod.Get,"conversations?include_deleted=true");
                 if(!rows.Any(x=>!x.Deleted) && previous.Count==0)
@@ -41,7 +45,7 @@ public sealed class AtlasRepository(CacheStore cache, Func<string,string,AtlasAp
                 if(previous.Count==0)throw;
                 offline=true;
             }
-            api?.Dispose();api=candidate;candidate=null;Scope=scope;Offline=offline;
+            api?.Dispose();api=candidate;candidate=null;Scope=scope;Offline=offline;StreamingChat=streaming;
             if(rows is not null)Sync(rows);
             foreach(var msg in cache.All<LocalMessage>(Scope,"messages").Where(x=>x.Delivery==Delivery.Pending))
                 cache.Put(Scope,"messages",msg.Id,msg with { Delivery=Delivery.Recoverable,Error="App interrupted. Check for the existing reply." });
@@ -141,15 +145,20 @@ public sealed class AtlasRepository(CacheStore cache, Func<string,string,AtlasAp
     {
         try
         {
-            var reply=await Api.JsonAsync<Reply>(HttpMethod.Post,"chat",new {message=msg.Text,conversation_id=msg.ConversationId,request_id=msg.RequestId,require_existing=true});
-            if(string.IsNullOrWhiteSpace(reply.ReplyText))throw new IOException("Atlas returned an invalid reply. Check for the saved reply.");
-            Complete(msg,reply.ReplyText);Offline=false;
+            var body=new {message=msg.Text,conversation_id=msg.ConversationId,request_id=msg.RequestId,require_existing=true};
+            string reply;
+            if(StreamingChat)
+                reply=await Api.StreamChatAsync(body,msg.RequestId,(phase,text)=>{StreamPhase=phase;StreamText=text;Changed?.Invoke();});
+            else reply=(await Api.JsonAsync<Reply>(HttpMethod.Post,"chat",body)).ReplyText;
+            if(string.IsNullOrWhiteSpace(reply))throw new IOException("Atlas returned an invalid reply. Check for the saved reply.");
+            Complete(msg,reply);Offline=false;
         }
         catch(Exception error)
         {
-            var state=error is AtlasApiException e && e.Status is 401 or 403 or 404 or 409 or 410 or 422 or 429 or 502 or 504 ? Delivery.Failed : Delivery.Recoverable;
+            var state=error is AtlasApiException e && e.Status is 401 or 403 or 404 or 410 or 422 or 429 or 502 or 504 ? Delivery.Failed : Delivery.Recoverable;
             cache.Put(Scope,"messages",msg.Id,msg with{Delivery=state,Error=Friendly(error)});throw;
         }
+        finally{StreamText="";StreamPhase="";Changed?.Invoke();}
         await UpdateSummary(msg.ConversationId);
     }
     public async Task RecoverAsync(string id)
@@ -222,7 +231,7 @@ public sealed class AtlasRepository(CacheStore cache, Func<string,string,AtlasAp
     public Task UploadAsync(string name,byte[] bytes)=>Api.UploadAsync(name,bytes);
     public Task<byte[]> DownloadAsync(string path)=>Api.DownloadAsync(path);
     public Task<Monitoring> MonitoringAsync()=>Get<Monitoring>("monitoring");
-    public void Disconnect(){api?.Dispose();api=null;Scope="";ConversationId="";Offline=false;}
+    public void Disconnect(){api?.Dispose();api=null;Scope="";ConversationId="";Offline=false;StreamingChat=false;StreamText="";StreamPhase="";}
     public static string Friendly(Exception e)=>e switch
     {
         AtlasApiException or ArgumentException or InvalidOperationException=>e.Message,

@@ -1,6 +1,6 @@
 # Atlas MAUI Blazor Hybrid
 
-Atlas 0.8.0 is the new C# client. Open **mobile/Atlas.sln** in Visual Studio with .NET 10 and the .NET MAUI workload. Android is the first installable target; the Windows host is also compiled in CI. iOS/Mac Catalyst targets have not been added or tested.
+Atlas 0.9.0 is the new C# client. Open **mobile/Atlas.sln** in Visual Studio with .NET 10 and the .NET MAUI workload. Android is the first installable target; the Windows host is also compiled in CI. iOS/Mac Catalyst targets have not been added or tested.
 
 | Project | Responsibility |
 | --- | --- |
@@ -59,3 +59,9 @@ The Atlas page and setup preview contain a live stylized 3D character. Drag to t
 ## Navigation
 
 Primary navigation stays at the bottom: Chat, Memory, Atlas, Files, and More. More or the header menu opens the workspace drawer, including conversations, agent profile, tools, server status, and settings. The drawer closes with a page selection, backdrop, Close, Escape, or Android Back; keyboard focus stays within the drawer and returns to its opener.
+
+## Streamed chat (0.9.0)
+
+With an updated backend advertising `streaming_chat: true` in authenticated health, the app uses POST `chat/stream` and shows live reply text. Older backends keep the ordinary request/reply path. Reconnect the app after upgrading the API so it refreshes capabilities. Partial text is transient and labelled in progress; only the final committed reply becomes a saved assistant message. A disconnected or malformed stream becomes recoverable: use Check for reply, never an automatic new inference request. Voice playback is available for completed replies.
+
+See [streaming protocol and deployment](../docs/chat-streaming.md).
