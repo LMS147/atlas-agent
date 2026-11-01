@@ -1,0 +1,30 @@
+@inherits ComponentBase
+<div class="message-content">
+@foreach(var block in Blocks)
+{
+    @if(block.Code){<pre><code>@block.Text</code></pre>}
+    else{<p>@block.Text</p>}
+}
+</div>
+@code {
+    [Parameter] public string Text {get;set;}="";
+    // All content is rendered as encoded text. Never trust model-generated HTML.
+    private IEnumerable<(bool Code,string Text)> Blocks
+    {
+        get
+        {
+            var lines=Text.Replace("\r\n","\n").Split('\n');
+            var text=new System.Text.StringBuilder();var code=false;
+            foreach(var line in lines)
+            {
+                if(line.StartsWith("```",StringComparison.Ordinal))
+                {
+                    if(text.Length>0){yield return(code,text.ToString().TrimEnd('\n'));text.Clear();}
+                    code=!code;
+                }
+                else text.AppendLine(line);
+            }
+            if(text.Length>0)yield return(code,text.ToString().TrimEnd('\n'));
+        }
+    }
+}

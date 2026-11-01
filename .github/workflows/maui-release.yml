@@ -1,0 +1,60 @@
+name: Atlas signed release APK
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  release:
+    runs-on: windows-latest
+    environment: android-release
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: microsoft
+          java-version: '21'
+      - name: Validate permanent signing configuration
+        shell: pwsh
+        env:
+          KEYSTORE: ${{ secrets.ATLAS_ANDROID_KEYSTORE_BASE64 }}
+          ALIAS: ${{ secrets.ATLAS_ANDROID_KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.ATLAS_ANDROID_KEY_PASSWORD }}
+          STORE_PASS: ${{ secrets.ATLAS_ANDROID_STORE_PASSWORD }}
+        run: |
+          foreach ($name in @('KEYSTORE','ALIAS','KEY_PASS','STORE_PASS')) {
+            if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($name))) { throw "Missing signing configuration: $name. Follow docs/android-release.md." }
+          }
+          $path = Join-Path $env:RUNNER_TEMP 'atlas-release.keystore'
+          [IO.File]::WriteAllBytes($path, [Convert]::FromBase64String($env:KEYSTORE))
+          & keytool -list -keystore $path -alias $env:ALIAS -storepass:env STORE_PASS | Out-Null
+          if ($LASTEXITCODE -ne 0) { throw 'Invalid signing key or alias' }
+      - run: dotnet test mobile/Atlas.Core.Tests/Atlas.Core.Tests.csproj -c Release
+      - run: dotnet workload install maui-android
+      - name: Install Android SDK components
+        run: dotnet build mobile/Atlas.Mobile/Atlas.Mobile.csproj -t:InstallAndroidDependencies -f net10.0-android -p:AndroidSdkDirectory="$env:ANDROID_HOME" -p:AcceptAndroidSDKLicenses=True
+      - name: Publish signed release APK
+        env:
+          SIGNING_ALIAS: ${{ secrets.ATLAS_ANDROID_KEY_ALIAS }}
+          ATLAS_KEY_PASS: ${{ secrets.ATLAS_ANDROID_KEY_PASSWORD }}
+          ATLAS_STORE_PASS: ${{ secrets.ATLAS_ANDROID_STORE_PASSWORD }}
+        run: |
+          dotnet publish mobile/Atlas.Mobile/Atlas.Mobile.csproj -f net10.0-android -c Release -p:AndroidPackageFormats=apk -p:AndroidKeyStore=true "-p:AndroidSigningKeyStore=$env:RUNNER_TEMP/atlas-release.keystore" "-p:AndroidSigningKeyAlias=$env:SIGNING_ALIAS" -p:AndroidSigningKeyPass=env:ATLAS_KEY_PASS -p:AndroidSigningStorePass=env:ATLAS_STORE_PASS
+          if ($LASTEXITCODE -ne 0) { throw 'Release publish failed' }
+      - name: Verify APK signature
+        run: |
+          $signer = Get-ChildItem "$env:ANDROID_HOME/build-tools/*/apksigner.bat" | Sort-Object FullName | Select-Object -Last 1
+          $apk = Get-ChildItem 'mobile/Atlas.Mobile/bin/Release/net10.0-android/publish/*-Signed.apk' | Select-Object -First 1
+          if (!$signer -or !$apk) { throw 'Missing signature tool or signed APK' }
+          & $signer.FullName verify --verbose --print-certs $apk.FullName
+          if ($LASTEXITCODE -ne 0) { throw 'APK signature verification failed' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: atlas-release-android-apk
+          path: mobile/Atlas.Mobile/bin/Release/net10.0-android/publish/*-Signed.apk
+          if-no-files-found: error
+      - name: Remove signing key
+        if: always()
+        run: Remove-Item "$env:RUNNER_TEMP/atlas-release.keystore" -Force -ErrorAction SilentlyContinue

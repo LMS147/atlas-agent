@@ -1,7 +1,20 @@
-<section class="page"><span class="eyebrow">YOUR WORKSPACE</span><h1>Tools</h1><p class="muted">Quick access to the tools connected to your Atlas server.</p>
+<section class="page"><span class="eyebrow">YOUR WORKSPACE</span><h1>Tools</h1><p class="muted">Run workspace maintenance with a preview before changes are applied.</p>
+<article class="card"><h2>Memory cleanup</h2><p>Find exact duplicate facts and repeated blank lines. Unique memories are preserved.</p><button disabled="@State.Busy" @onclick="Preview">Preview cleanup</button>
+@if(plan is not null){<div role="status"><p>@plan.RemovedEntries duplicate entries · @plan.BeforeChars → @plan.AfterChars characters.</p><p>Changes affect this server workspace and are backed up by the server. A changed revision requires a fresh preview.</p><div class="toolbar"><button class="primary" disabled="@State.Busy" @onclick="Apply">Apply cleanup…</button><button disabled="@State.Busy" @onclick="()=>plan=null">Cancel</button></div></div>}
+</article>
 <div class="tools-grid">
 @foreach(var tool in tools){<button disabled="@State.Busy" @onclick="()=>State.NavigateAsync(tool.Page)"><AtlasIcon Name="@tool.Icon" /><strong>@tool.Title</strong><span>@tool.Description</span></button>}
 </div></section>
 @code {
+    private CompactPlan? plan;
+    private Task Preview()=>State.Run(async()=>plan=await State.Repo.CompactPreviewAsync());
+    private async Task Apply()
+    {
+        if(plan is null)return;
+        if(!await State.DeviceFiles.ConfirmAsync("Apply memory cleanup?",$"Remove {plan.RemovedEntries} duplicate entries from this server's memories? Unique facts are kept."))return;
+        var revision=plan.Revision;
+        if(await State.Run(()=>State.Repo.CompactAsync(revision))){plan=null;State.Success("Memory cleanup completed.");}
+        else plan=null;
+    }
     private readonly (string Page,string Icon,string Title,string Description)[] tools=[("Files","files","File manager","Open, upload, and edit workspace files"),("Memory","memory","Memory manager","Manage what Atlas remembers"),("Monitoring","server","Server status","CPU, memory, storage, and service metrics"),("Atlas","spark","Atlas companion","Open your live 3D companion")];
 }

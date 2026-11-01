@@ -47,7 +47,7 @@ The GitHub repository remains `LMS147/atlas-agent`; **Atlas-AI** is the project 
 
 ## Improvement roadmap
 
-The core Atlas features are implemented. The next phase prioritises reliability and release readiness before expanding the app. The items below are planned improvements, not completed features.
+The core Atlas features are implemented. The next phase prioritises reliability and release readiness before expanding the app. The table describes the target scope; the progress section below distinguishes delivered work from remaining tasks.
 
 | Priority | Improvement | Planned work |
 |---|---|---|
@@ -61,6 +61,24 @@ The core Atlas features are implemented. The next phase prioritises reliability 
 | 8 | Character animation | Improve the live 3D character's resemblance to the approved Atlas mascot, expressions and speech synchronisation. |
 
 Recommended order: permanent APK signing, backups and recovery, then real-device testing. Automated builds and smoke tests do not replace testing with the actual server and device.
+
+### Roadmap implementation progress (0.8.0)
+
+| Area | Delivered | Still required |
+|---|---|---|
+| Signing | Manual Release APK workflow, signature verification and permanent-key setup guide | Owner configures signing secrets; exercise release build and compatible-update test |
+| Backups | Offline full local workspace backup/verify/restore CLI, SQLite integrity checks, archive checksums and regression tests | Schedule protected copies, back up external GitHub memory separately, and run a production restore drill |
+| Device testing | Physical-device acceptance checklist | Execute on the owner's phone and real backend; record evidence |
+| Chat | Conversation title/recent-preview search, encoded fenced code blocks and processing status | Provider token streaming and richer formatting |
+| Accessibility | Visible focus, inherited control fonts, 44px minimum button height, wrapping toolbars and reduced-motion styles | TalkBack and large-text acceptance on physical devices |
+| Migration | Primary/legacy client guidance and data-preservation checklist | Supported Kotlin export/MAUI import flow |
+| Tools | Memory cleanup preview, revision-checked execution and native confirmation | Additional automation actions and task scheduling |
+| Character | Existing live 3D companion retained | Closer mascot model, expressions and speech synchronisation |
+
+- [Permanent signing setup](docs/android-release.md)
+- [Workspace backup and recovery](deployment/backup/README.md)
+- [Real-device acceptance checklist](docs/device-acceptance.md)
+- [MAUI migration status](docs/migration-status.md)
 
 ## License
 

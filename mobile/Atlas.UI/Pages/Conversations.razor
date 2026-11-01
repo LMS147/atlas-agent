@@ -1,6 +1,8 @@
 <section class="page"><div class="page-heading"><div><span class="eyebrow">HISTORY</span><h1>Conversations</h1></div><button class="primary" disabled="@State.Busy" @onclick="New">New chat</button></div>
 <button disabled="@State.Busy" @onclick="()=>State.Run(()=>State.Repo.RefreshConversationsAsync())">Refresh list</button>
-@foreach(var row in State.Repo.Conversations)
+<label class="conversation-search">Search conversations<input type="search" @bind="query" @bind:event="oninput" maxlength="200" placeholder="Title or recent message" /></label>
+<p class="muted" role="status">@Rows.Count() matching conversations. Searches titles and recent previews in this workspace.</p>
+@foreach(var row in Rows)
 {
     <article class="card" @key="row.Id"><h2>@row.Title</h2><p>@row.Preview</p><small class="muted">@row.MessageCount messages · @(row.ServerAvailable?"Server history":"Cached only")</small>
     <div class="toolbar"><button disabled="@State.Busy" @onclick="()=>Open(row.Id)">Open</button><button disabled="@(State.Busy || !row.ServerAvailable)" @onclick="()=>BeginRename(row)">Rename</button><button class="danger" disabled="@State.Busy" @onclick="()=>Delete(row)">Delete…</button></div></article>
@@ -9,6 +11,8 @@
 @if(renameId is not null){<div class="dialog-backdrop"><section class="dialog" role="dialog" aria-modal="true" aria-label="Rename conversation"><h2>Rename conversation</h2><input @bind="name" maxlength="80" aria-label="Conversation title" /><div class="toolbar"><button disabled="@State.Busy" @onclick="Rename">Save</button><button disabled="@State.Busy" @onclick="()=>renameId=null">Cancel</button></div></section></div>}
 </section>
 @code {
+    private string query="";
+    private IEnumerable<Conversation> Rows=>State.Repo.Conversations.Where(x=>string.IsNullOrWhiteSpace(query) || x.Title.Contains(query.Trim(),StringComparison.OrdinalIgnoreCase) || x.Preview.Contains(query.Trim(),StringComparison.OrdinalIgnoreCase));
     private string? renameId;private string name="";
     private void BeginRename(Conversation row){renameId=row.Id;name=row.Title;}
     private async Task Rename(){if(await State.Run(()=>State.Repo.RenameAsync(renameId!,name)))renameId=null;}

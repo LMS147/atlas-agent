@@ -14,7 +14,7 @@
         @foreach(var message in State.Repo.Messages)
         {
             <article @key="message.Id" class="message @message.Role">
-                <div class="bubble">@if(message.Role!="user"){<img class="atlas-avatar message-avatar" src="_content/Atlas.UI/atlas/avatar.webp" alt="" width="28" height="28" />}<small>@(message.Role=="user"?"You":"Atlas")</small><p>@message.Text</p></div>
+                <div class="bubble">@if(message.Role!="user"){<img class="atlas-avatar message-avatar" src="_content/Atlas.UI/atlas/avatar.webp" alt="" width="28" height="28" />}<small>@(message.Role=="user"?"You":"Atlas")</small><MessageContent Text="@message.Text" /></div>
                 @if(message.Role=="assistant"){<button class="voice-reply" aria-label="Read this reply aloud" disabled="@(!State.SpeechAvailable || State.Speaking || !State.IsActive)" @onclick="()=>State.SpeakAsync(message.Text)"><AtlasIcon Name="voice" /> Read aloud</button>}
                 @if(timestamps){<small class="muted">@DateTimeOffset.FromUnixTimeMilliseconds(message.CreatedAt).ToLocalTime().ToString("HH:mm")</small>}
                 @if(message.Role=="user" && message.Delivery!=Delivery.Sent)
@@ -29,6 +29,7 @@
         }
     </div>
     @if(State.Speaking){<div class="speech-status" role="status">Atlas is speaking <button @onclick="State.StopSpeaking">Stop voice</button></div>}
+    @if(State.Busy && State.Repo.Messages.Any(x=>x.Delivery==Delivery.Pending)){<div class="chat-processing" role="status" aria-live="polite"><strong>Atlas is preparing your reply…</strong><span>You can leave the app. Check for the saved reply if the connection is interrupted.</span></div>}
     <form class="composer" @onsubmit="Send" @onsubmit:preventDefault>
         <textarea @bind="draft" @bind:event="oninput" rows="2" maxlength="8000" placeholder="Ask Atlas anything…" aria-label="Message" disabled="@State.Busy"></textarea>
         <button class="primary" type="submit" aria-label="Send message" disabled="@(State.Busy || string.IsNullOrWhiteSpace(draft) || State.Repo.Current?.ServerAvailable!=true || Unresolved)"><span>Send</span><AtlasIcon Name="send" /></button>
