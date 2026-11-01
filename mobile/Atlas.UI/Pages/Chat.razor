@@ -1,12 +1,12 @@
 <section class="chat-page page">
-    <div class="page-heading"><div><span class="eyebrow">WORKSPACE</span><h1>@(State.Repo.Current?.Title ?? "Choose a conversation")</h1></div><button disabled="@State.Busy" @onclick="NewChat">New chat</button></div>
+    <div class="page-heading"><div><span class="eyebrow">YOUR SPACE TO THINK</span><h1>@(State.Repo.Current?.Title ?? "Choose a conversation")</h1></div><button disabled="@State.Busy" @onclick="NewChat"><AtlasIcon Name="plus" /> New chat</button></div>
     @if(State.Repo.Current?.ServerAvailable==false){<div class="alert">This chat is cached locally and unavailable on this server. Its cached messages are preserved.</div>}
     <div class="toolbar">
         <button disabled="@(State.Busy || State.Repo.Current?.ServerAvailable!=true)" @onclick="()=>State.Run(()=>State.Repo.HistoryAsync())">Refresh history</button>
         @if(State.Repo.Current?.HasMore==true){<button disabled="@State.Busy" @onclick="()=>State.Run(()=>State.Repo.HistoryAsync(true))">Load earlier</button>}
     </div>
     <div class="messages" role="log" aria-label="Conversation messages">
-        @if(!State.Repo.Messages.Any()){<div class="empty"><span class="brand-mark large">A</span><h2>How can I help?</h2><p>Send a message to your Atlas server.</p></div>}
+        @if(!State.Repo.Messages.Any()){<div class="empty chat-welcome"><span class="welcome-symbol"><AtlasIcon Name="spark" /></span><span class="eyebrow">A FRESH START</span><h2>What’s on your mind?</h2><p>Bring a question, an idea, or a task.<br />Let’s work through it together.</p><div class="starter-grid"><button disabled="@State.Busy" @onclick='()=>draft="Help me turn an idea into a clear plan."'><AtlasIcon Name="spark" /><strong>Explore an idea</strong><span>Find a useful starting point</span></button><button disabled="@State.Busy" @onclick='()=>draft="Help me prioritize my tasks and make a plan for today."'><AtlasIcon Name="memory" /><strong>Make a plan</strong><span>Turn your next steps into action</span></button></div></div>}
         @foreach(var message in State.Repo.Messages)
         {
             <article @key="message.Id" class="message @message.Role">
@@ -24,11 +24,11 @@
         }
     </div>
     <form class="composer" @onsubmit="Send" @onsubmit:preventDefault>
-        <textarea @bind="draft" @bind:event="oninput" rows="3" maxlength="8000" placeholder="Ask Atlas anything…" aria-label="Message" disabled="@State.Busy"></textarea>
-        <button class="primary" type="submit" disabled="@(State.Busy || string.IsNullOrWhiteSpace(draft) || State.Repo.Current?.ServerAvailable!=true || Unresolved)">Send</button>
+        <textarea @bind="draft" @bind:event="oninput" rows="2" maxlength="8000" placeholder="Ask Atlas anything…" aria-label="Message" disabled="@State.Busy"></textarea>
+        <button class="primary" type="submit" disabled="@(State.Busy || string.IsNullOrWhiteSpace(draft) || State.Repo.Current?.ServerAvailable!=true || Unresolved)"><span>Send</span><AtlasIcon Name="send" /></button>
     </form>
-    <small class="muted">@(Unresolved?"Check the previous delivery before sending another message.":"AI replies may contain mistakes.")</small>
-    <label class="check"><input type="checkbox" @bind="timestamps" /> Show timestamps</label>
+    <small class="muted composer-note">@(Unresolved?"Check the previous delivery before sending another message.":"AI replies may contain mistakes.")</small>
+    <label class="check timestamp-option"><input type="checkbox" @bind="timestamps" /> Show timestamps</label>
 </section>
 @code {
     private string draft="";private bool timestamps=true;

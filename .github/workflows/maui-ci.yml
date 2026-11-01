@@ -22,6 +22,26 @@ jobs:
         with:
           name: atlas-hybrid-test-results
           path: TestResults/**
+  visual:
+    needs: core
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: dotnet run --project mobile/tests/Atlas.VisualChecks/Atlas.VisualChecks.csproj --configuration Release -- visual-results
+      - run: cp mobile/Atlas.UI/wwwroot/atlas.css visual-results/atlas.css
+      - run: pip install playwright==1.55.0
+      - run: python mobile/tests/visual_check.py visual-results
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: atlas-hybrid-visual-results
+          path: visual-results/**
   native:
     needs: core
     runs-on: windows-latest

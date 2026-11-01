@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:ui="clr-namespace:Atlas.UI.Components;assembly=Atlas.UI" x:Class="Atlas.Mobile.MainPage" BackgroundColor="#091321" Title="Atlas">
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:ui="clr-namespace:Atlas.UI.Components;assembly=Atlas.UI" x:Class="Atlas.Mobile.MainPage" BackgroundColor="#0B1119" SafeAreaEdges="All" Title="Atlas">
  <BlazorWebView HostPage="wwwroot/index.html" UrlLoading="OnUrlLoading"><BlazorWebView.RootComponents><RootComponent Selector="#app" ComponentType="{x:Type ui:AtlasRoot}" /></BlazorWebView.RootComponents></BlazorWebView>
 </ContentPage>

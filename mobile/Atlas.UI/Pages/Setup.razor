@@ -1,18 +1,26 @@
 <section class="setup page">
-    <span class="eyebrow">ATLAS · MAUI BLAZOR HYBRID</span>
-    <h1>Your assistant.<br />Your server.</h1>
-    <p class="muted">Connect to your Termux HTTPS tunnel or your Render test API. Your Groq key stays on the server.</p>
-    <div class="card form-grid">
-        <label for="server">Server URL</label>
-        <input id="server" type="url" @bind="State.ServerUrl" @bind:event="oninput" disabled="@State.Busy" autocapitalize="none" spellcheck="false" />
-        <label for="token">Atlas access token</label>
-        <input id="token" type="password" @bind="token" @bind:event="oninput" disabled="@State.Busy" autocomplete="off" />
-        <label class="check"><input type="checkbox" @bind="remember" disabled="@State.Busy" /> Remember this server securely</label>
-        <button class="primary" disabled="@(State.Busy || string.IsNullOrWhiteSpace(token))" @onclick="Connect">Connect</button>
-        <p class="muted">Use ATLAS_API_TOKEN from your backend. The address is editable; credentials are stored using the device's secure storage.</p>
+    <div class="setup-intro">
+        <span class="eyebrow"><span class="tiny-line"></span> YOUR PRIVATE AI WORKSPACE</span>
+        <div class="welcome-symbol"><AtlasIcon Name="spark" /></div>
+        <h1>A little more clarity.<br /><span class="accent-text">A lot more possibility.</span></h1>
+        <p class="setup-description">A place to think, create, and get things done. Connect your Atlas server to make it yours.</p>
+        <div class="setup-benefits"><span><AtlasIcon Name="chat" /> Conversations that continue</span><span><AtlasIcon Name="memory" /> Context that stays with you</span><span><AtlasIcon Name="lock" /> A workspace you control</span></div>
+    </div>
+    <div class="setup-panel">
+        <div class="card connection-card">
+            <div class="card-heading"><span class="section-icon"><AtlasIcon Name="server" /></span><div><h2>Connect to Atlas</h2><p class="muted">One connection. Your whole workspace.</p></div></div>
+            <div class="form-grid">
+                <div class="field-group"><label for="server">Server address</label><div class="input-wrap"><AtlasIcon Name="server" /><input id="server" type="url" @bind="State.ServerUrl" @bind:event="oninput" disabled="@State.Busy" autocapitalize="none" spellcheck="false" placeholder="https://your-atlas-server.com" /></div><small class="field-hint">Use the HTTPS address of your Atlas server.</small></div>
+                <div class="field-group"><label for="token">Access token</label><div class="input-wrap"><AtlasIcon Name="lock" /><input id="token" type="@(showToken ? "text" : "password")" @bind="token" @bind:event="oninput" disabled="@State.Busy" autocomplete="off" placeholder="Enter your Atlas token" /><button class="input-action" type="button" disabled="@State.Busy" @onclick="()=>showToken=!showToken" aria-label="@(showToken ? "Hide access token" : "Show access token")" aria-pressed="@showToken"><AtlasIcon Name="eye" /></button></div></div>
+                <label class="check remember"><input type="checkbox" @bind="remember" disabled="@State.Busy" /> Remember this connection</label>
+                <button class="primary connect-button" disabled="@(State.Busy || string.IsNullOrWhiteSpace(token))" @onclick="Connect"><span>@(State.Busy ? "Connecting…" : "Open my workspace")</span><AtlasIcon Name="arrow" /></button>
+            </div>
+            <details class="connection-help"><summary>Where do I find my access token?</summary><p>Use the <code>ATLAS_API_TOKEN</code> configured on your Atlas server. This is separate from your Groq API key.</p></details>
+        </div>
+        <p class="security-note"><AtlasIcon Name="lock" /><span>Saved credentials are protected by your device's secure storage.</span></p>
     </div>
 </section>
 @code {
-    private string token="";private bool remember=true;
+    private string token="";private bool remember=true,showToken;
     private async Task Connect(){if(await State.ConnectAsync(token,remember))token="";}
 }

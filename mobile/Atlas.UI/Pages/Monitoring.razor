@@ -3,9 +3,9 @@
 @if(sample is not null)
 {
     <p class="muted">Last sample: @DateTimeOffset.FromUnixTimeMilliseconds(sample.SampledAt).ToLocalTime().ToString("HH:mm:ss"). Failed refreshes keep the dated last sample visible.</p>
-    <div class="metric-grid"><article class="card"><h2>CPU</h2><p>Device: @Percent(sample.DeviceCpuPercent)</p><p>Atlas process: @Percent(sample.ProcessCpuPercent)</p><small class="muted">Process CPU: 100% per busy core.</small></article>
-    <article class="card"><h2>RAM</h2><p>Used: @Bytes(sample.Ram?.UsedBytes)</p><p>Available: @Bytes(sample.Ram?.AvailableBytes)</p><p>Total: @Bytes(sample.Ram?.TotalBytes)</p><p>Atlas resident: @Bytes(sample.ProcessRssBytes)</p></article>
-    <article class="card"><h2>Storage filesystem</h2><p>Used: @Bytes(sample.Storage?.UsedBytes)</p><p>Free: @Bytes(sample.Storage?.FreeBytes)</p><p>Total: @Bytes(sample.Storage?.TotalBytes)</p></article>
+    <div class="metric-grid"><article class="card"><h2>CPU</h2><p class="metric-value">@Percent(sample.DeviceCpuPercent)</p><small class="muted">Device utilization</small><p>Atlas process: @Percent(sample.ProcessCpuPercent)</p><small class="muted">Process CPU: 100% per busy core.</small></article>
+    <article class="card"><h2>RAM</h2><p class="metric-value">@Bytes(sample.Ram?.UsedBytes)</p><small class="muted">Memory in use</small><p>Available: @Bytes(sample.Ram?.AvailableBytes)</p><p>Total: @Bytes(sample.Ram?.TotalBytes)</p><p>Atlas resident: @Bytes(sample.ProcessRssBytes)</p></article>
+    <article class="card"><h2>Storage filesystem</h2><p>Used: @Bytes(sample.Storage?.UsedBytes)</p><p class="metric-value">@Bytes(sample.Storage?.FreeBytes)</p><small class="muted">Free storage</small><p>Total: @Bytes(sample.Storage?.TotalBytes)</p></article>
     <article class="card"><h2>API service</h2><p>PID: @sample.Service.Pid</p><p>Uptime: @sample.Service.UptimeSeconds seconds</p><p>Device uptime: @(sample.DeviceUptimeSeconds?.ToString()??"Unavailable") seconds</p><p>Python threads: @sample.Service.Threads</p><p>Requests: @sample.Service.Requests</p><p>Errors (5xx): @sample.Service.Errors</p><p>Active requests: @sample.Service.ActiveRequests</p><small class="muted">Counters reset on API restart and include the metrics request.</small></article></div>
     @if(sample.Unavailable.Count>0){<p class="alert">Unavailable: @string.Join(", ",sample.Unavailable). Android may restrict system reads.</p>}
 }
