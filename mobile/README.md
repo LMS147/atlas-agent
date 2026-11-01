@@ -1,6 +1,6 @@
 # Atlas MAUI Blazor Hybrid
 
-Atlas 0.7.2 is the new C# client. Open **mobile/Atlas.sln** in Visual Studio with .NET 10 and the .NET MAUI workload. Android is the first installable target; the Windows host is also compiled in CI. iOS/Mac Catalyst targets have not been added or tested.
+Atlas 0.7.3 is the new C# client. Open **mobile/Atlas.sln** in Visual Studio with .NET 10 and the .NET MAUI workload. Android is the first installable target; the Windows host is also compiled in CI. iOS/Mac Catalyst targets have not been added or tested.
 
 | Project | Responsibility |
 | --- | --- |
