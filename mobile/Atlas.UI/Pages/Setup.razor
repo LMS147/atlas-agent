@@ -4,9 +4,9 @@
     <p class="muted">Connect to your Termux HTTPS tunnel or your Render test API. Your Groq key stays on the server.</p>
     <div class="card form-grid">
         <label for="server">Server URL</label>
-        <input id="server" type="url" @bind="State.ServerUrl" disabled="@State.Busy" autocapitalize="none" spellcheck="false" />
+        <input id="server" type="url" @bind="State.ServerUrl" @bind:event="oninput" disabled="@State.Busy" autocapitalize="none" spellcheck="false" />
         <label for="token">Atlas access token</label>
-        <input id="token" type="password" @bind="token" disabled="@State.Busy" autocomplete="off" />
+        <input id="token" type="password" @bind="token" @bind:event="oninput" disabled="@State.Busy" autocomplete="off" />
         <label class="check"><input type="checkbox" @bind="remember" disabled="@State.Busy" /> Remember this server securely</label>
         <button class="primary" disabled="@(State.Busy || string.IsNullOrWhiteSpace(token))" @onclick="Connect">Connect</button>
         <p class="muted">Use ATLAS_API_TOKEN from your backend. The address is editable; credentials are stored using the device's secure storage.</p>

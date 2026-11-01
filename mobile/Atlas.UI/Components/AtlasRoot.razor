@@ -2,7 +2,7 @@
 <div class="app-shell">
     <header class="app-header">
         <div class="brand"><span class="brand-mark">A</span><div><strong>Atlas</strong><small>@(State.Connected ? State.Repo.Offline ? "Offline · cached workspace" : "Connected · HTTPS" : "Your personal AI companion")</small></div></div>
-        <button class="menu-toggle" @onclick="() => menu = !menu" aria-label="Toggle navigation">Menu</button>
+        @if(State.Connected){<button class="menu-toggle" @onclick="() => menu = !menu" aria-label="Toggle navigation">Menu</button>}
     </header>
     @if(State.Connected)
     {

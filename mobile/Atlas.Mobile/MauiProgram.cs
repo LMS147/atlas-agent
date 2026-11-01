@@ -8,6 +8,9 @@ public static class MauiProgram
     {
         var builder=MauiApp.CreateBuilder();
         builder.UseMauiApp<App>();builder.Services.AddMauiBlazorWebView();
+#if DEBUG
+        builder.Services.AddBlazorWebViewDeveloperTools();
+#endif
         builder.Services.AddSingleton(new CacheStore(Path.Combine(FileSystem.AppDataDirectory,"atlas-hybrid.sqlite3")));
         builder.Services.AddSingleton<AtlasRepository>();
         builder.Services.AddSingleton<ICredentialStore,DeviceCredentials>();
