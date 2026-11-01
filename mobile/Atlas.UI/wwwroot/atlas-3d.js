@@ -16,15 +16,15 @@ export function buildAtlas(canvas, container) {
     renderer.toneMappingExposure=1.35;
     const scene=new T.Scene();
     const camera=new T.PerspectiveCamera(37,1,.1,30);
-    camera.position.set(0,1.55,5.1);camera.lookAt(0,1.45,0);
+    camera.position.set(0,1.55,5.7);camera.lookAt(0,1.45,0);
     scene.add(new T.HemisphereLight(0xc3e8ff,0x17233a,2.6));
     const key=new T.DirectionalLight(0xe2eaff,3.2);key.position.set(-3,5,4);scene.add(key);
     const rim=new T.DirectionalLight(0x227dff,4);rim.position.set(2,3,-3);scene.add(rim);
     const fill=new T.PointLight(0x20cfff,7,8);fill.position.set(-1,2,2);scene.add(fill);
     const mat=(color,roughness=.65,metalness=.15)=>new T.MeshStandardMaterial({color,roughness,metalness});
     const coat=mat(0x11213a,.78,.08), edge=mat(0x1e4e83,.5,.35), black=mat(0x090f19,.36,.3), silver=mat(0x9eaabd,.35,.65), sole=mat(0x273951,.6,.2);
-    const glow=new T.MeshStandardMaterial({color:0x47dfff,emissive:0x13baff,emissiveIntensity:2,roughness:.25});
-    const blue=new T.MeshStandardMaterial({color:0x397bff,emissive:0x1254dd,emissiveIntensity:1.1});
+    const glow=new T.MeshBasicMaterial({color:0x42dbff,toneMapped:false});
+    const blue=new T.MeshBasicMaterial({color:0x427dff,toneMapped:false});
     const root=new T.Group();scene.add(root);
     const mesh=(parent,geometry,material,x=0,y=0,z=0,scale=null)=>{const m=new T.Mesh(geometry,material);m.position.set(x,y,z);if(scale)m.scale.set(...scale);parent.add(m);return m;};
     const sphere=(p,m,x,y,z,s)=>mesh(p,new T.SphereGeometry(1,32,24),m,x,y,z,s);
@@ -40,12 +40,12 @@ export function buildAtlas(canvas, container) {
     const belt=mesh(root,new T.TorusGeometry(.435,.04,8,48),black,0,1.03,0);belt.rotation.x=Math.PI/2;
     box(root,silver,0,1.03,.445,[.15,.105,.035]);box(root,black,.36,.92,.32,[.12,.25,.1]);
     // Atlas chest mark, made from two luminous strokes.
-    tube(root,[[-.11,1.39,.385],[0,1.57,.385],[.11,1.39,.385]],glow,.018);
-    tube(root,[[.005,1.45,.389],[.08,1.45,.389]],glow,.013);
+    tube(root,[[-.11,1.39,.465],[0,1.57,.465],[.11,1.39,.465]],glow,.018);
+    tube(root,[[-.05,1.45,.468],[.05,1.45,.468]],glow,.013);
     for(const x of [-.21,.21]){
         mesh(root,new T.CapsuleGeometry(.17,.43,8,20),black,x,.57,0);
         mesh(root,new T.CapsuleGeometry(.14,.28,8,20),black,x,.2,.025);
-        sphere(root,black,x,-.005,.13,[.185,.14,.31]);
+        sphere(root,black,x,-.005,.13,[.185,.1,.31]);
         box(root,sole,x,-.085,.14,[.36,.08,.53]);
         tube(root,[[x-.13,-.04,.36],[x+.13,-.04,.36]],blue,.015);
     }
@@ -81,12 +81,13 @@ export function buildAtlas(canvas, container) {
     }
     const mouth=sphere(head,black,0,-.195,.464,[.105,.012,.016]);
     const lip=tube(head,[[-.09,-.19,.473],[0,-.213,.482],[.09,-.19,.473]],edge,.009);
-    for(let i=0;i<7;i++){
-        const hair=mesh(head,new T.ConeGeometry(.078,.38+(i%3)*.035,5),silver,-.27+i*.078,.365,.43);
-        hair.rotation.z=Math.PI+(.4-i*.13);hair.rotation.x=-.12;
-    }
+    // Broad, curved silver locks preserve Atlas's side-swept fringe.
+    function lock(draw){const shape=new T.Shape();draw(shape);shape.closePath();return mesh(head,new T.ExtrudeGeometry(shape,{depth:.025,bevelEnabled:true,bevelSize:.012,bevelThickness:.012,bevelSegments:3,curveSegments:16}),silver,0,0,.46);}
+    lock(s=>{s.moveTo(.27,.47);s.quadraticCurveTo(-.06,.61,-.33,.30);s.quadraticCurveTo(-.18,.38,-.25,.18);s.quadraticCurveTo(.05,.28,.27,.47);});
+    lock(s=>{s.moveTo(-.08,.48);s.quadraticCurveTo(-.35,.46,-.40,.19);s.quadraticCurveTo(-.32,.28,-.26,.22);s.quadraticCurveTo(-.25,.39,-.08,.48);});
+    lock(s=>{s.moveTo(.23,.48);s.quadraticCurveTo(.43,.40,.43,.18);s.quadraticCurveTo(.35,.24,.35,.12);s.quadraticCurveTo(.29,.31,.23,.48);});
     // Orbital halo follows the head while its satellite revolves independently.
-    const halo=new T.Group();halo.position.set(0,.67,0);halo.rotation.z=-.15;halo.rotation.x=.25;head.add(halo);
+    const halo=new T.Group();halo.position.set(0,.67,0);halo.rotation.z=-.15;halo.rotation.x=.65;head.add(halo);
     const ring=mesh(halo,new T.TorusGeometry(.76,.012,8,80),blue);ring.rotation.x=Math.PI/2;
     const satellite=sphere(halo,glow,.76,0,0,[.047,.047,.047]);
     // Floating light near Atlas, deliberately separate from the speech state.

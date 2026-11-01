@@ -13,7 +13,7 @@ var state=new AppState(repo,new Creds(),new Files());
 using var services=new ServiceCollection().AddLogging().AddSingleton(state).BuildServiceProvider();
 await using var renderer=new HtmlRenderer(services,services.GetRequiredService<ILoggerFactory>());
 var root=await renderer.Dispatcher.InvokeAsync(()=>renderer.RenderComponentAsync<AtlasRoot>());
-async Task Save(string name){var html=await renderer.Dispatcher.InvokeAsync(root.ToHtmlString);await File.WriteAllTextAsync($"{output}/{name}.html","<!DOCTYPE html><html><head><meta name=viewport content=\"width=device-width,initial-scale=1\"><link rel=stylesheet href=\"atlas.css\"></head><body>"+html+"</body></html>");}
+async Task Save(string name){var html=await renderer.Dispatcher.InvokeAsync(root.ToHtmlString);await File.WriteAllTextAsync($"{output}/{name}.html","<!DOCTYPE html><html><head><meta charset=\"utf-8\"><meta name=viewport content=\"width=device-width,initial-scale=1\"><link rel=stylesheet href=\"atlas.css\"></head><body>"+html+"</body></html>");}
 await Save("setup");
 await renderer.Dispatcher.InvokeAsync(async()=>{await repo.ConnectAsync("https://example.test/",new string('x',32));await state.NavigateAsync("Chat");});
 await Save("chat");
