@@ -36,6 +36,10 @@ async def main():
   await page.wait_for_timeout(400)
   assert await page.evaluate("atlas.getDiagnostics().mode")=='speaking'
   await page.screenshot(path=str(ROOT/'atlas-3d-speaking.png'))
+  await page.evaluate('atlas.setPortrait(true)')
+  await page.wait_for_timeout(350)
+  await page.screenshot(path=str(ROOT/'atlas-3d-portrait.png'))
+  await page.evaluate('atlas.setPortrait(false)')
   await page.evaluate('atlas.wave()')
   await page.wait_for_timeout(700)
   await page.screenshot(path=str(ROOT/'atlas-3d-wave.png'))

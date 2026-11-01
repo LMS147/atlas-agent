@@ -1,6 +1,6 @@
 @implements IAsyncDisposable
 @inject IServiceProvider Services
-<div class="atlas-character @(Compact ? "compact" : "")">
+<div class="atlas-character @(Compact ? "compact" : "") @(Portrait ? "portrait" : "")">
     <div class="atlas-stage" @ref="stage">
         <canvas @ref="canvas" tabindex="0" role="img" aria-label="Interactive 3D Atlas. Drag or use left and right arrows to turn him."></canvas>
         @if(!ready){<img class="character-fallback" src="_content/Atlas.UI/atlas/mascot.webp" alt="Atlas AI companion" />}
@@ -12,6 +12,7 @@
 </div>
 @code {
     [Parameter] public bool Compact {get;set;}
+    [Parameter] public bool Portrait {get;set;}
     private ElementReference canvas,stage;
     private IJSObjectReference? module,character;
     private bool ready,failed,disposed;
@@ -29,7 +30,11 @@
                 if(disposed){await character.InvokeVoidAsync("dispose");await character.DisposeAsync();character=null;await module.DisposeAsync();module=null;return;}
                 ready=true;await InvokeAsync(StateHasChanged);
             }
-            if(character is not null)await character.InvokeVoidAsync("setState",State.Speaking?"speaking":State.Busy?"thinking":"idle",State.IsActive);
+            if(character is not null)
+            {
+                await character.InvokeVoidAsync("setPortrait",Portrait);
+                await character.InvokeVoidAsync("setState",State.Speaking?"speaking":State.Busy?"thinking":"idle",State.IsActive);
+            }
         }
         catch(JSException){failed=true;ready=false;await InvokeAsync(StateHasChanged);}
         catch(InvalidOperationException){failed=true;ready=false;await InvokeAsync(StateHasChanged);}

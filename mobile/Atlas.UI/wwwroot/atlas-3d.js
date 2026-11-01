@@ -136,6 +136,7 @@ export function buildAtlas(canvas, container) {
         setState(next,isActive=true){container.dataset.atlasMode=next;mode=['idle','thinking','speaking'].includes(next)?next:'idle';active=isActive;},
         wave(){waveAt=(performance.now()-started)/1000;},
         reset(){targetYaw=0;},
+        setPortrait(enabled){camera.position.set(0,enabled?2.12:1.55,enabled?2.75:5.7);camera.lookAt(0,enabled?2.08:1.45,0);camera.updateProjectionMatrix();},
         getDiagnostics(){return {mode,active,frames,yaw,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles};},
         dispose(){if(disposed)return;disposed=true;renderer.setAnimationLoop(null);observer.disconnect();intersection.disconnect();canvas.removeEventListener('pointerdown',down);canvas.removeEventListener('pointermove',move);canvas.removeEventListener('pointerup',up);canvas.removeEventListener('pointercancel',up);canvas.removeEventListener('keydown',keydown);canvas.removeEventListener('webglcontextlost',contextLost);const geometries=new Set(),materials=new Set();scene.traverse(o=>{if(o.geometry)geometries.add(o.geometry);if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>materials.add(m));});geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());renderer.dispose();renderer.forceContextLoss();delete container.dataset.atlasReady;}
     };
