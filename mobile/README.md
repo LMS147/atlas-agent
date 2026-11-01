@@ -44,6 +44,10 @@ Kotlin Room and its Keystore records are not imported automatically. Re-enter th
 
 The Python backend, Telegram integration, Termux scripts, SQLite server data and API contracts remain unchanged. Task automation, character animation, embedded Groq keys, and a browser-hosted web frontend are not part of this client migration. Razor components can be reused in a future web host with appropriate native-service adapters.
 
+## UI state updates
+
+`AtlasRoot` publishes the mutable `AppState` through a non-fixed `CascadingValue`; pages inherit `AtlasPage` and receive it as a cascading parameter. Injecting the singleton alone does not notify parameterless child components when a parent rerenders. This previously left setup controls disabled after startup completed.
+
 ## Verification limits
 
 CI compiles Razor, executes HTTP/SQLite tests, builds the Android APK, compiles Windows, and runs an Android emulator touch smoke test. The smoke test types into the setup fields, checks that Connect enables before token blur, taps Connect against a deliberately unreachable local HTTPS endpoint, verifies error recovery, and toggles Remember. It uses only a fake token and makes no inference call. Debug builds enable WebView inspection for this test; release builds do not. Real device file destinations, secure-storage behaviour, keyboard/back handling, accessibility, screen layouts and lifecycle timing need device testing. Backend/Groq integration requires your configured server. Never treat a successful build as a real paid/provider inference check.

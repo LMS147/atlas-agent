@@ -104,6 +104,7 @@ finally:
     if cdp:
         (OUT/'webview-events.json').write_text(json.dumps(cdp.events, indent=2))
         (OUT/'page.txt').write_text(str(cdp.evaluate('document.body.innerText')))
+        (OUT/'page.html').write_text(str(cdp.evaluate('document.documentElement.outerHTML')))
     (OUT/'logcat.txt').write_text(adb('logcat', '-d'))
     with (OUT/'screen.png').open('wb') as screenshot:
         subprocess.run(['adb', 'exec-out', 'screencap', '-p'], stdout=screenshot, check=False)
