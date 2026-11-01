@@ -25,7 +25,7 @@
     </div>
     <form class="composer" @onsubmit="Send" @onsubmit:preventDefault>
         <textarea @bind="draft" @bind:event="oninput" rows="2" maxlength="8000" placeholder="Ask Atlas anything…" aria-label="Message" disabled="@State.Busy"></textarea>
-        <button class="primary" type="submit" disabled="@(State.Busy || string.IsNullOrWhiteSpace(draft) || State.Repo.Current?.ServerAvailable!=true || Unresolved)"><span>Send</span><AtlasIcon Name="send" /></button>
+        <button class="primary" type="submit" aria-label="Send message" disabled="@(State.Busy || string.IsNullOrWhiteSpace(draft) || State.Repo.Current?.ServerAvailable!=true || Unresolved)"><span>Send</span><AtlasIcon Name="send" /></button>
     </form>
     <small class="muted composer-note">@(Unresolved?"Check the previous delivery before sending another message.":"AI replies may contain mistakes.")</small>
     <label class="check timestamp-option"><input type="checkbox" @bind="timestamps" /> Show timestamps</label>

@@ -4,8 +4,8 @@
 <CascadingValue Value="State" IsFixed="false">
 <div class="app-shell @(State.Connected ? "connected" : "welcome")">
     <header class="app-header">
-        <div class="brand"><span class="brand-mark">A<span class="brand-dot"></span></span><div><strong>Atlas<span class="brand-ai"> AI</span></strong><small>Your personal workspace</small></div></div>
-        <span class="connection-status @(State.Connected ? State.Repo.Offline ? "offline" : "online" : "")"><span class="status-dot"></span>@(State.Connected ? State.Repo.Offline ? "Offline cache" : "Connected" : "Private by design")</span>
+        <div class="brand"><span class="brand-mark" aria-hidden="true">A<span class="brand-dot"></span></span><div><strong>Atlas<span class="brand-ai"> AI</span></strong><small>Your personal workspace</small></div></div>
+        <span class="connection-status @(State.Connected ? State.Repo.Offline ? "offline" : "online" : "")"><span class="status-dot"></span>@(State.Connected ? State.Repo.Offline ? "Offline cache" : "Connected" : "Ready to connect")</span>
     </header>
     @if(State.Connected)
     {
