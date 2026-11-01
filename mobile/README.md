@@ -1,6 +1,6 @@
 # Atlas MAUI Blazor Hybrid
 
-Atlas Hybrid 0.6.0 is the new C# client. Open **mobile/Atlas.sln** in Visual Studio with .NET 10 and the .NET MAUI workload. Android is the first installable target; the Windows host is also compiled in CI. iOS/Mac Catalyst targets have not been added or tested.
+Atlas Hybrid 0.6.1 is the new C# client. Open **mobile/Atlas.sln** in Visual Studio with .NET 10 and the .NET MAUI workload. Android is the first installable target; the Windows host is also compiled in CI. iOS/Mac Catalyst targets have not been added or tested.
 
 | Project | Responsibility |
 | --- | --- |
@@ -46,4 +46,4 @@ The Python backend, Telegram integration, Termux scripts, SQLite server data and
 
 ## Verification limits
 
-CI compiles Razor, executes HTTP/SQLite tests, builds the Android APK, and compiles Windows. Real device file destinations, secure-storage behaviour, keyboard/back handling, accessibility, screen layouts and lifecycle timing need device testing. Backend/Groq integration requires your configured server. Never treat a successful build as a real paid/provider inference check.
+CI compiles Razor, executes HTTP/SQLite tests, builds the Android APK, compiles Windows, and runs an Android emulator touch smoke test. The smoke test types into the setup fields, checks that Connect enables before token blur, taps Connect against a deliberately unreachable local HTTPS endpoint, verifies error recovery, and toggles Remember. It uses only a fake token and makes no inference call. Debug builds enable WebView inspection for this test; release builds do not. Real device file destinations, secure-storage behaviour, keyboard/back handling, accessibility, screen layouts and lifecycle timing need device testing. Backend/Groq integration requires your configured server. Never treat a successful build as a real paid/provider inference check.
