@@ -1,12 +1,12 @@
 # Atlas-AI
 
-Atlas personal AI companion: a native Android app alongside the existing Python/Groq Telegram agent.
+Atlas personal AI companion: a .NET MAUI Blazor Hybrid client alongside the Python/FastAPI/Groq backend and existing Telegram agent. The Kotlin Android client remains available during migration.
 
 ## Project structure
 
 | Directory | Purpose |
 |---|---|
-| `android/` | Kotlin, Compose, Material 3; MVVM/repository; Retrofit/OkHttp; Room; Keystore credentials |
+| `mobile/` | .NET MAUI Blazor Hybrid solution: C# core, Razor UI, Android/Windows native host and tests |\n| `android/` | Kotlin, Compose, Material 3; MVVM/repository; Retrofit/OkHttp; Room; Keystore credentials |
 | `backend/app/agent/` | Existing Groq agent loop and tools |
 | `backend/app/services/` | Working Markdown memory service; reserved future services |
 | `backend/app/repositories/` | Existing optional GitHub memory storage |
@@ -19,11 +19,11 @@ Atlas personal AI companion: a native Android app alongside the existing Python/
 | `docs/` | Architecture, API contract, and setup |
 | `.github/workflows/` | Android build and backend tests |
 
-Open **android/** in Android Studio and choose **Explore demo** to start. The native app includes chat, memory search/manual creation, profile, files, status, settings, and a dark blue interface. Demo replies are explanatory local text, not AI inference. Live Android chat connects to the authenticated FastAPI backend after you configure server credentials and an HTTPS tunnel.
+For the new C# client, open **[mobile/Atlas.sln](mobile/Atlas.sln)** in Visual Studio with the .NET 10 MAUI workload. See [the migration guide](docs/maui-migration.md). It installs alongside Kotlin as **Atlas Hybrid**, with its own cache and credentials. Connect to restore conversations held by your backend.\n\nFor the existing Kotlin client, open **android/** in Android Studio and choose **Explore demo** to start. The native app includes chat, memory search/manual creation, profile, files, status, settings, and a dark blue interface. Demo replies are explanatory local text, not AI inference. Live Android chat connects to the authenticated FastAPI backend after you configure server credentials and an HTTPS tunnel.
 
 Start the existing Telegram agent from the repository root with `python -m backend.telegram.bot` after installing `backend/requirements.txt` and configuring `backend/.env`.
 
-- [Setup and migration instructions](docs/setup.md)
+- [MAUI Blazor Hybrid client and build instructions](mobile/README.md)\n- [Setup and migration instructions](docs/setup.md)
 - [Test the Android API on Render](deployment/render/README.md)
 - [Termux API service installation](deployment/termux/README.md)
 - [Architecture and implementation status](docs/architecture.md)
@@ -48,3 +48,4 @@ No open-source license has been selected. See LICENSE. The source is not granted
 ### v0.5 — File controls, memory maintenance and live monitoring
 
 The Android Files screen uploads/downloads documents through the system picker and opens UTF-8 workspace files for conflict-safe editing. The Memory screen edits/deletes saved facts and previews conservative, backed-up compaction. Server status samples real CPU/RAM/storage/uptime/API counters every ten seconds while visible, with explicit unavailable values for Android-restricted metrics. See [API contracts](docs/api.md) and [setup](docs/setup.md) for limits and operation.
+

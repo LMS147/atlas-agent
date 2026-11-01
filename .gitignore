@@ -27,3 +27,14 @@ local.properties
 .run/
 *.log
 .DS_Store
+
+# .NET MAUI
+**/bin/
+**/obj/
+.vs/
+*.user
+*.suo
+*.nupkg
+*.msix
+*.msixbundle
+

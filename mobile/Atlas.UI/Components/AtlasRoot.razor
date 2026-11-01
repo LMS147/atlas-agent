@@ -1,0 +1,43 @@
+@implements IDisposable
+<div class="app-shell">
+    <header class="app-header">
+        <div class="brand"><span class="brand-mark">A</span><div><strong>Atlas</strong><small>@(State.Connected ? State.Repo.Offline ? "Offline · cached workspace" : "Connected · HTTPS" : "Your personal AI companion")</small></div></div>
+        <button class="menu-toggle" @onclick="() => menu = !menu" aria-label="Toggle navigation">Menu</button>
+    </header>
+    @if(State.Connected)
+    {
+        <nav class="navigation @(menu ? "expanded" : "")" aria-label="Main navigation">
+            @foreach(var page in pages)
+            {
+                <button class="@(State.Page==page ? "active" : "")" disabled="@State.Busy" @onclick="()=>Navigate(page)">@(page)</button>
+            }
+        </nav>
+    }
+    <main>
+        @if(State.Busy){<div class="loading" role="status">Working…</div>}
+        @if(State.Error is not null){<div class="alert error" role="alert">@State.Error</div>}
+        @if(State.Notice is not null){<div class="alert notice" role="status">@State.Notice</div>}
+        @if(!State.Connected || State.Page=="Setup"){<Setup />}
+        else
+        {
+            @switch(State.Page)
+            {
+                case "Chat":<Chat />break;
+                case "Conversations":<Conversations />break;
+                case "Memory":<Memory />break;
+                case "Files":<Files />break;
+                case "Monitoring":<Monitoring />break;
+                case "Profile":<ProfilePage />break;
+                case "Settings":<Settings />break;
+            }
+        }
+    </main>
+</div>
+@code {
+    private bool menu;
+    private readonly string[] pages=["Chat","Conversations","Memory","Files","Monitoring","Profile","Settings"];
+    protected override async Task OnInitializedAsync(){State.Changed+=OnChanged;await State.InitializeAsync();}
+    private void OnChanged()=>_ = InvokeAsync(StateHasChanged);
+    private async Task Navigate(string page){menu=false;await State.NavigateAsync(page);}
+    public void Dispose()=>State.Changed-=OnChanged;
+}

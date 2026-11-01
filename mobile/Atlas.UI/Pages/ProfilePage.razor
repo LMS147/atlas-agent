@@ -1,0 +1,6 @@
+<section class="page"><span class="eyebrow">AGENT IDENTITY</span><h1>@(profile?.Name??"Atlas")</h1><p class="muted">Read-only agent profile from your server.</p><button disabled="@State.Busy" @onclick="Refresh">Refresh</button><article class="card"><pre class="document">@profile?.Content</pre></article></section>
+@code {
+    private Profile? profile;
+    protected override Task OnInitializedAsync()=>Refresh();
+    private Task Refresh()=>State.Run(async()=>profile=await State.Repo.ProfileAsync());
+}

@@ -1,0 +1,49 @@
+name: MAUI Hybrid CI
+on:
+  push:
+    paths: ['mobile/**', '.github/workflows/maui-ci.yml']
+  pull_request:
+    paths: ['mobile/**', '.github/workflows/maui-ci.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet test mobile/Atlas.Core.Tests/Atlas.Core.Tests.csproj --configuration Release --logger trx --results-directory TestResults
+      - run: dotnet build mobile/Atlas.UI/Atlas.UI.csproj --configuration Release
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: atlas-hybrid-test-results
+          path: TestResults/**
+  native:
+    needs: core
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: microsoft
+          java-version: '21'
+      - name: Install MAUI workloads
+        run: dotnet workload install maui
+      - name: Install required Android SDK components
+        run: dotnet build mobile/Atlas.Mobile/Atlas.Mobile.csproj -t:InstallAndroidDependencies -f net10.0-android -p:AndroidSdkDirectory="$env:ANDROID_HOME" -p:AcceptAndroidSDKLicenses=True
+      - name: Build installable Android APK
+        run: dotnet build mobile/Atlas.Mobile/Atlas.Mobile.csproj -f net10.0-android -c Debug -p:AndroidPackageFormats=apk -p:EmbedAssembliesIntoApk=true
+      - name: Compile Windows host
+        run: dotnet build mobile/Atlas.Mobile/Atlas.Mobile.csproj -f net10.0-windows10.0.19041.0 -c Debug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: atlas-hybrid-android-apk
+          path: mobile/Atlas.Mobile/bin/Debug/net10.0-android/**/*-Signed.apk
+          if-no-files-found: error

@@ -1,0 +1,21 @@
+@implements IDisposable
+<section class="page"><div class="page-heading"><div><span class="eyebrow">LIVE SERVER METRICS</span><h1>Monitoring</h1></div><button disabled="@State.Busy" @onclick="Refresh">Refresh</button></div><p class="muted">Refreshes every 10 seconds while this page and the app are active. Metrics describe your connected server.</p>
+@if(sample is not null)
+{
+    <p class="muted">Last sample: @DateTimeOffset.FromUnixTimeMilliseconds(sample.SampledAt).ToLocalTime().ToString("HH:mm:ss"). Failed refreshes keep the dated last sample visible.</p>
+    <div class="metric-grid"><article class="card"><h2>CPU</h2><p>Device: @Percent(sample.DeviceCpuPercent)</p><p>Atlas process: @Percent(sample.ProcessCpuPercent)</p><small class="muted">Process CPU: 100% per busy core.</small></article>
+    <article class="card"><h2>RAM</h2><p>Used: @Bytes(sample.Ram?.UsedBytes)</p><p>Available: @Bytes(sample.Ram?.AvailableBytes)</p><p>Total: @Bytes(sample.Ram?.TotalBytes)</p><p>Atlas resident: @Bytes(sample.ProcessRssBytes)</p></article>
+    <article class="card"><h2>Storage filesystem</h2><p>Used: @Bytes(sample.Storage?.UsedBytes)</p><p>Free: @Bytes(sample.Storage?.FreeBytes)</p><p>Total: @Bytes(sample.Storage?.TotalBytes)</p></article>
+    <article class="card"><h2>API service</h2><p>PID: @sample.Service.Pid</p><p>Uptime: @sample.Service.UptimeSeconds seconds</p><p>Device uptime: @(sample.DeviceUptimeSeconds?.ToString()??"Unavailable") seconds</p><p>Python threads: @sample.Service.Threads</p><p>Requests: @sample.Service.Requests</p><p>Errors (5xx): @sample.Service.Errors</p><p>Active requests: @sample.Service.ActiveRequests</p><small class="muted">Counters reset on API restart and include the metrics request.</small></article></div>
+    @if(sample.Unavailable.Count>0){<p class="alert">Unavailable: @string.Join(", ",sample.Unavailable). Android may restrict system reads.</p>}
+}
+</section>
+@code {
+    private Atlas.Core.Monitoring? sample;private readonly CancellationTokenSource stop=new();
+    protected override async Task OnInitializedAsync(){await Refresh();_ = Poll();}
+    private Task Refresh()=>State.Run(async()=>sample=await State.Repo.MonitoringAsync());
+    private async Task Poll(){try{using var timer=new PeriodicTimer(TimeSpan.FromSeconds(10));while(await timer.WaitForNextTickAsync(stop.Token))if(!State.Busy && State.IsActive)await InvokeAsync(Refresh);}catch(OperationCanceledException){}}
+    private static string Bytes(long? value)=>value is null?"Unavailable":$"{value/1048576.0:N1} MiB";
+    private static string Percent(double? value)=>value is null?"Unavailable":$"{value:N1}%";
+    public void Dispose(){stop.Cancel();stop.Dispose();}
+}

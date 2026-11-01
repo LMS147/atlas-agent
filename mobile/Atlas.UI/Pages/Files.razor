@@ -1,0 +1,38 @@
+@implements IDisposable
+<section class="page"><span class="eyebrow">SERVER DOCUMENTS</span><h1>Files</h1><p class="muted">Workspace files support upload and text editing. Canonical documents and backups are read-only here. Transfers: 5 MiB; UTF-8 editor: 256 KiB.</p>
+<div class="toolbar"><button disabled="@State.Busy" @onclick="Root">Root</button><button disabled="@State.Busy" @onclick="()=>Load(directory)">Refresh</button><button class="primary" disabled="@State.Busy" @onclick="Pick">Upload</button></div><p class="eyebrow">/@directory</p>
+@foreach(var item in rows)
+{
+    <article class="card" @key="item.Path"><h2>@item.Name</h2><small class="muted">@(item.Directory?"Folder":$"{item.SizeBytes:N0} bytes · {(item.Writable?"Editable":"Read-only")}")</small><div class="toolbar"><button disabled="@State.Busy" @onclick="()=>Open(item)">@(item.Directory?"Open folder":"Open text")</button>@if(!item.Directory){<button disabled="@State.Busy" @onclick="()=>Download(item)">Download / open</button>}</div></article>
+}
+@if(rows.Count==0 && !State.Busy){<p>This folder is empty.</p>}
+@if(upload is not null){<div class="dialog-backdrop"><section class="dialog form-grid" role="dialog" aria-modal="true" aria-label="Upload file"><h2>Upload to workspace</h2><p>Choose an unused filename. Use letters/numbers, spaces, dots, dashes or underscores; begin with a letter or number.</p><input @bind="name" maxlength="120" aria-label="Upload filename" />
+@if(State.Error is not null){<p class="error">@State.Error</p>}
+<div class="toolbar"><button disabled="@State.Busy" @onclick="Upload">Upload</button><button disabled="@State.Busy" @onclick="()=>upload=null">Cancel</button></div></section></div>}
+@if(document is not null){<div class="dialog-backdrop"><section class="dialog editor" role="dialog" aria-modal="true" aria-label="File editor"><h2>@document.Path</h2><p class="muted">@(document.Writable?"Editable UTF-8 document":"Read-only document")</p>
+@if(State.Error is not null){<p class="error">@State.Error</p>}
+<textarea @bind="content" @bind:event="oninput" readonly="@(!document.Writable)" disabled="@State.Busy" aria-label="Document content" maxlength="262144"></textarea><div class="toolbar"><button disabled="@State.Busy" @onclick="Close">Close</button>@if(document.Writable){<button class="primary" disabled="@(State.Busy || content==document.Content)" @onclick="Save">Save</button>}</div></section></div>}
+</section>
+@code {
+    private List<FileItem> rows=[];private string directory="",content="",name="";private FileDocument? document;private (string Name,byte[] Content)? upload;
+    protected override Task OnInitializedAsync(){State.BackHandler=Back;return Load("");}
+    private async Task<bool> Back()
+    {
+        if(document is not null){await Close();return true;}
+        if(upload is not null){upload=null;await InvokeAsync(StateHasChanged);return true;}
+        return false;
+    }
+    public void Dispose(){State.BackHandler=null;}
+    private Task Root()=>Load("");
+    private Task Load(string folder)=>State.Run(async()=>{var result=await State.Repo.FilesAsync(folder);rows=result;directory=folder;});
+    private async Task Open(FileItem item){if(item.Directory)await Load(item.Path);else await State.Run(async()=>{document=await State.Repo.DocumentAsync(item.Path);content=document.Content;});}
+    private Task Pick()=>State.Run(async()=>{upload=await State.DeviceFiles.PickAsync();if(upload is not null)name=upload.Value.Name;});
+    private Task Upload()=>State.Run(async()=>
+    {
+        if(!System.Text.RegularExpressions.Regex.IsMatch(name,"^[A-Za-z0-9][A-Za-z0-9._ -]{0,119}$"))throw new ArgumentException("Enter a valid workspace filename (120 characters maximum).");
+        await State.Repo.UploadAsync(name,upload!.Value.Content);upload=null;directory="workspace";rows=await State.Repo.FilesAsync(directory);State.Success("File uploaded.");
+    });
+    private Task Download(FileItem item)=>State.Run(async()=>{var bytes=await State.Repo.DownloadAsync(item.Path);await State.DeviceFiles.SaveAsync(item.Name,bytes);State.Success("Choose your destination or an app in the system share/open menu.");});
+    private Task Save()=>State.Run(async()=>{await State.Repo.EditFileAsync(document!,content);document=await State.Repo.DocumentAsync(document!.Path);content=document.Content;State.Success("File saved.");});
+    private async Task Close(){if(content!=document!.Content && !await State.DeviceFiles.ConfirmAsync("Discard changes?","Your unsaved text edits will be discarded."))return;document=null;}
+}

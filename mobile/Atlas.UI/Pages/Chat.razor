@@ -1,0 +1,49 @@
+<section class="chat-page page">
+    <div class="page-heading"><div><span class="eyebrow">WORKSPACE</span><h1>@(State.Repo.Current?.Title ?? "Choose a conversation")</h1></div><button disabled="@State.Busy" @onclick="NewChat">New chat</button></div>
+    @if(State.Repo.Current?.ServerAvailable==false){<div class="alert">This chat is cached locally and unavailable on this server. Its cached messages are preserved.</div>}
+    <div class="toolbar">
+        <button disabled="@(State.Busy || State.Repo.Current?.ServerAvailable!=true)" @onclick="()=>State.Run(()=>State.Repo.HistoryAsync())">Refresh history</button>
+        @if(State.Repo.Current?.HasMore==true){<button disabled="@State.Busy" @onclick="()=>State.Run(()=>State.Repo.HistoryAsync(true))">Load earlier</button>}
+    </div>
+    <div class="messages" role="log" aria-label="Conversation messages">
+        @if(!State.Repo.Messages.Any()){<div class="empty"><span class="brand-mark large">A</span><h2>How can I help?</h2><p>Send a message to your Atlas server.</p></div>}
+        @foreach(var message in State.Repo.Messages)
+        {
+            <article @key="message.Id" class="message @message.Role">
+                <div class="bubble"><small>@(message.Role=="user"?"You":"Atlas")</small><p>@message.Text</p></div>
+                @if(timestamps){<small class="muted">@DateTimeOffset.FromUnixTimeMilliseconds(message.CreatedAt).ToLocalTime().ToString("HH:mm")</small>}
+                @if(message.Role=="user" && message.Delivery!=Delivery.Sent)
+                {
+                    <div class="delivery"><small>@message.Delivery</small><p>@message.Error</p>
+                        @if(message.Delivery is Delivery.Recoverable or Delivery.NotReceived){<button disabled="@State.Busy" @onclick="()=>State.Run(()=>State.Repo.RecoverAsync(message.Id))">Check for reply</button>}
+                        @if(message.Delivery==Delivery.NotReceived){<button disabled="@State.Busy" @onclick="()=>Retry(message.Id,false)">Retry delivery…</button>}
+                        @if(message.Delivery==Delivery.Failed){<button disabled="@State.Busy" @onclick="()=>Retry(message.Id,true)">Send again…</button>}
+                    </div>
+                }
+            </article>
+        }
+    </div>
+    <form class="composer" @onsubmit="Send" @onsubmit:preventDefault>
+        <textarea @bind="draft" @bind:event="oninput" rows="3" maxlength="8000" placeholder="Ask Atlas anything…" aria-label="Message" disabled="@State.Busy"></textarea>
+        <button class="primary" type="submit" disabled="@(State.Busy || string.IsNullOrWhiteSpace(draft) || State.Repo.Current?.ServerAvailable!=true || Unresolved)">Send</button>
+    </form>
+    <small class="muted">@(Unresolved?"Check the previous delivery before sending another message.":"AI replies may contain mistakes.")</small>
+    <label class="check"><input type="checkbox" @bind="timestamps" /> Show timestamps</label>
+</section>
+@code {
+    private string draft="";private bool timestamps=true;
+    private bool Unresolved=>State.Repo.Messages.Any(x=>x.Role=="user" && x.Delivery is Delivery.Pending or Delivery.Recoverable or Delivery.NotReceived);
+    private Task NewChat()=>State.Run(()=>State.Repo.NewConversationAsync());
+    private async Task Send()
+    {
+        var submitted=draft;var before=State.Repo.Messages.Select(x=>x.Id).ToHashSet();
+        await State.Run(async()=>{await State.Repo.SendAsync(submitted);draft="";});
+        // A saved failed bubble retains its text, while an unsaved draft stays editable.
+        if(State.Repo.Messages.Any(x=>x.Role=="user" && !before.Contains(x.Id)))draft="";
+    }
+    private async Task Retry(string id,bool fresh)
+    {
+        var explanation=fresh?"This creates a NEW AI request and may repeat tool effects. Check saved memories first. Send again?":"This retries delivery with the SAME request ID. A request already received by Atlas will not run again. Retry delivery?";
+        if(await State.DeviceFiles.ConfirmAsync("Confirm resend",explanation))await State.Run(()=>State.Repo.RetryAsync(id,fresh));
+    }
+}
