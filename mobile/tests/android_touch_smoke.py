@@ -88,8 +88,12 @@ try:
     adb('shell', 'input', 'keyevent', *(['67'] * 100))
     adb('shell', 'input', 'text', 'https://127.0.0.1:1/')
     assert cdp.evaluate("document.querySelector('#server').value") == 'https://127.0.0.1:1/'
+    adb('shell', 'input', 'keyevent', '4')  # hide URL keyboard before locating the next field
+    time.sleep(.5)
     tap('#token')
+    until(lambda: cdp.evaluate("document.activeElement.id === 'token'"), 10)
     adb('shell', 'input', 'text', 'atlas-emulator-fake-token-1234567890')
+    assert cdp.evaluate("document.querySelector('#token').value") == 'atlas-emulator-fake-token-1234567890'
     # Before blur, oninput must enable Connect. This catches the setup-screen regression.
     until(lambda: cdp.evaluate("!document.querySelector('button.primary').disabled"), 10)
     adb('shell', 'input', 'keyevent', '4')  # dismiss keyboard
