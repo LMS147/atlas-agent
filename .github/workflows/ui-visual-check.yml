@@ -1,0 +1,30 @@
+name: UI visual checks
+on:
+  push:
+    paths: ['.github/workflows/ui-visual-check.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  visual:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: dotnet run --project mobile/tests/Atlas.VisualChecks/Atlas.VisualChecks.csproj --configuration Release -- visual-results
+      - run: |
+          cp mobile/Atlas.UI/wwwroot/atlas.css visual-results/atlas.css
+          mkdir -p visual-results/_content/Atlas.UI
+          cp -R mobile/Atlas.UI/wwwroot/. visual-results/_content/Atlas.UI/
+      - run: pip install playwright==1.55.0
+      - run: python mobile/tests/visual_check.py visual-results
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: atlas-hybrid-visual-results
+          path: visual-results/**
