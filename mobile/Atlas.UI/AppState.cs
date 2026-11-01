@@ -8,6 +8,8 @@ public sealed class AppState(AtlasRepository repository, ICredentialStore creden
     public IDeviceFiles DeviceFiles { get; } = files;
     public event Action? Changed;
     public bool Busy { get; private set; }
+    public bool DrawerOpen { get; private set; }
+    public void SetDrawer(bool open){if(DrawerOpen==open)return;DrawerOpen=open;Notify();}
     private bool active=true;
     public bool IsActive { get=>active; set {if(active==value)return;active=value;if(!value)StopSpeaking();Notify();} }
     private CancellationTokenSource? speechStop;
@@ -33,6 +35,7 @@ public sealed class AppState(AtlasRepository repository, ICredentialStore creden
     public Func<Task<bool>>? BackHandler { get; set; }
     public async Task BackAsync()
     {
+        if(DrawerOpen){SetDrawer(false);return;}
         if(Busy)return;
         if(BackHandler is not null && await BackHandler())return;
         if(Connected && Page!="Chat")await NavigateAsync("Chat");
@@ -80,6 +83,6 @@ public sealed class AppState(AtlasRepository repository, ICredentialStore creden
     public void Disconnect()
     {
         if(Busy)return;
-        StopSpeaking();credentials.Clear();Repo.Disconnect();Page="Setup";Error=null;Notice=null;Notify();
+        DrawerOpen=false;StopSpeaking();credentials.Clear();Repo.Disconnect();Page="Setup";Error=null;Notice=null;Notify();
     }
 }

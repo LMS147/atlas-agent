@@ -1,6 +1,6 @@
 # Atlas MAUI Blazor Hybrid
 
-Atlas Hybrid 0.7.0 is the new C# client. Open **mobile/Atlas.sln** in Visual Studio with .NET 10 and the .NET MAUI workload. Android is the first installable target; the Windows host is also compiled in CI. iOS/Mac Catalyst targets have not been added or tested.
+Atlas Hybrid 0.7.1 is the new C# client. Open **mobile/Atlas.sln** in Visual Studio with .NET 10 and the .NET MAUI workload. Android is the first installable target; the Windows host is also compiled in CI. iOS/Mac Catalyst targets have not been added or tested.
 
 | Project | Responsibility |
 | --- | --- |
@@ -55,3 +55,7 @@ CI compiles Razor, executes HTTP/SQLite tests, builds the Android APK, compiles 
 ## Atlas companion
 
 The Atlas page and setup preview contain a live stylized 3D character. Drag to turn, wave, or tap Say hello. Assistant replies have explicit Read aloud controls. Speech uses the installed device voice and stops when the app deactivates. Original character artwork is used for the header and reply avatars. See [character implementation](../docs/atlas-character.md) for model and lip-sync scope.
+
+## Navigation
+
+Primary navigation stays at the bottom: Chat, Memory, Atlas, Files, and More. More or the header menu opens the workspace drawer, including conversations, agent profile, tools, server status, and settings. The drawer closes with a page selection, backdrop, Close, Escape, or Android Back; keyboard focus stays within the drawer and returns to its opener.

@@ -1,24 +1,25 @@
 @inherits ComponentBase
 @inject AppState State
-@implements IDisposable
+@inject IServiceProvider Services
+@implements IAsyncDisposable
 <CascadingValue Value="State" IsFixed="false">
 <div class="app-shell @(State.Connected ? "connected" : "welcome")">
-    <header class="app-header">
+    <header class="app-header" inert="@(State.DrawerOpen ? "" : null)">
+        @if(State.Connected){<button id="workspace-menu-button" class="header-menu" aria-label="Open workspace menu" aria-controls="workspace-drawer" aria-expanded="@State.DrawerOpen" @onclick='()=>OpenDrawer("workspace-menu-button")'><AtlasIcon Name="menu" /></button>}
         <div class="brand"><img class="atlas-avatar brand-avatar" src="_content/Atlas.UI/atlas/avatar.webp" alt="" width="40" height="40" /><div><strong>Atlas<span class="brand-ai"> AI</span></strong><small>Your personal workspace</small></div></div>
         <span class="connection-status @(State.Connected ? State.Repo.Offline ? "offline" : "online" : "")"><span class="status-dot"></span>@(State.Connected ? State.Repo.Offline ? "Offline cache" : "Connected" : "Ready to connect")</span>
     </header>
     @if(State.Connected)
     {
-        <nav class="navigation" aria-label="Main navigation">
-            <span class="nav-caption">WORKSPACE</span>
-            @foreach(var page in pages)
+        <nav class="bottom-navigation" aria-label="Main navigation" inert="@(State.DrawerOpen ? "" : null)">
+            @foreach(var page in primaryPages)
             {
-                <button class="@(State.Page==page ? "active" : "")" disabled="@State.Busy" aria-current="@(State.Page==page ? "page" : null)" @onclick="()=>Navigate(page)"><AtlasIcon Name="@PageIcon(page)" /><span>@(page)</span></button>
+                <button class="@(State.Page==page ? "active" : "")" disabled="@State.Busy" aria-current="@(State.Page==page ? "page" : null)" @onclick="()=>Navigate(page)"><span class="nav-icon"><AtlasIcon Name="@PageIcon(page)" /></span><span>@(page)</span></button>
             }
-            <div class="nav-footer"><AtlasIcon Name="lock" /><span>Your server.<br />Your conversations.</span></div>
+            <button id="workspace-more-button" class="@(State.DrawerOpen || !primaryPages.Contains(State.Page) ? "active" : "")" aria-label="More pages" aria-controls="workspace-drawer" aria-expanded="@State.DrawerOpen" @onclick='()=>OpenDrawer("workspace-more-button")'><span class="nav-icon"><AtlasIcon Name="menu" /></span><span>More</span></button>
         </nav>
     }
-    <main>
+    <main inert="@(State.DrawerOpen ? "" : null)">
         @if(State.Busy){<div class="loading" role="status">Working…</div>}
         @if(State.Error is not null){<div class="alert error" role="alert">@State.Error</div>}
         @if(State.Notice is not null){<div class="alert notice" role="status">@State.Notice</div>}
@@ -32,19 +33,68 @@
                 case "Conversations":<Conversations />break;
                 case "Memory":<Memory />break;
                 case "Files":<Files />break;
+                case "Tools":<Tools />break;
                 case "Monitoring":<Monitoring />break;
                 case "Profile":<ProfilePage />break;
                 case "Settings":<Settings />break;
             }
         }
     </main>
+    @if(State.Connected && State.DrawerOpen)
+    {
+        <button class="drawer-backdrop" aria-label="Close workspace menu" tabindex="-1" @onclick="CloseDrawer"></button>
+        <aside id="workspace-drawer" class="workspace-drawer" role="dialog" aria-modal="true" aria-label="Workspace menu" @ref="drawer" @onkeydown="DrawerKey">
+            <div class="drawer-brand">
+                <button class="drawer-close" aria-label="Close menu" @onclick="CloseDrawer"><AtlasIcon Name="close" /></button>
+                <svg class="drawer-logo" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="atlas-drawer-gradient" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#55bcff"/><stop offset="1" stop-color="#8463ff"/></linearGradient></defs><path fill="url(#atlas-drawer-gradient)" d="M50 5 94 91Q96 97 89 96L75 93 50 43 25 93 11 96Q4 97 6 91Z"/></svg>
+                <h2>Atlas</h2><p>@(State.Repo.Offline ? "Offline workspace" : "Personal workspace")</p>
+            </div>
+            <nav class="drawer-navigation" aria-label="Workspace pages">
+                @foreach(var page in drawerPages)
+                {
+                    <button class="@(State.Page==page ? "active" : "")" disabled="@State.Busy" aria-current="@(State.Page==page ? "page" : null)" @onclick="()=>Navigate(page)"><AtlasIcon Name="@PageIcon(page)" /><span>@PageLabel(page)</span></button>
+                }
+            </nav>
+            <div class="drawer-footer"><AtlasIcon Name="lock" /><span>Your server. Your workspace.</span></div>
+        </aside>
+    }
 </div>
 </CascadingValue>
 @code {
-    private readonly string[] pages=["Chat","Atlas","Conversations","Memory","Files","Monitoring","Profile","Settings"];
+    private readonly string[] primaryPages=["Chat","Memory","Atlas","Files"];
+    private readonly string[] drawerPages=["Chat","Conversations","Memory","Profile","Files","Tools","Monitoring","Settings"];
+    private ElementReference drawer;
+    private IJSObjectReference? navigation;
+    private DotNetObjectReference<AtlasRoot>? reference;
+    private bool syncedDrawer,disposed;
+    private string openerId="workspace-more-button";
     protected override async Task OnInitializedAsync(){State.Changed+=OnChanged;await State.InitializeAsync();}
     private void OnChanged()=>_ = InvokeAsync(StateHasChanged);
-    private Task Navigate(string page)=>State.NavigateAsync(page);
-    private static string PageIcon(string page)=>page switch {"Atlas"=>"spark","Chat"=>"chat","Conversations"=>"history","Memory"=>"memory","Files"=>"files","Monitoring"=>"monitor","Profile"=>"profile",_=>"settings"};
-    public void Dispose()=>State.Changed-=OnChanged;
+    private void OpenDrawer(string id){openerId=id;State.SetDrawer(true);}
+    private void CloseDrawer()=>State.SetDrawer(false);
+    [JSInvokable] public Task CloseDrawerFromJS(){CloseDrawer();return Task.CompletedTask;}
+    private void DrawerKey(KeyboardEventArgs e){if(e.Key=="Escape")CloseDrawer();}
+    private Task Navigate(string page){CloseDrawer();return State.NavigateAsync(page);}
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if(disposed || syncedDrawer==State.DrawerOpen)return;
+        syncedDrawer=State.DrawerOpen;
+        try
+        {
+            var js=Services.GetService(typeof(IJSRuntime)) as IJSRuntime;if(js is null)return;
+            navigation??=await js.InvokeAsync<IJSObjectReference>("import","./_content/Atlas.UI/atlas-navigation.js");
+            if(disposed){await navigation.DisposeAsync();navigation=null;return;}
+            if(State.DrawerOpen){reference??=DotNetObjectReference.Create(this);await navigation.InvokeVoidAsync("openDrawer",drawer,reference,openerId);}
+            else await navigation.InvokeVoidAsync("closeDrawer");
+        }
+        catch(JSException){}catch(InvalidOperationException){}
+    }
+    private static string PageLabel(string page)=>page switch {"Profile"=>"Agent profile","Monitoring"=>"Server status",_=>page};
+    private static string PageIcon(string page)=>page switch {"Atlas"=>"spark","Chat"=>"chat","Conversations"=>"history","Memory"=>"memory","Files"=>"files","Tools"=>"tools","Monitoring"=>"server","Profile"=>"profile",_=>"settings"};
+    public async ValueTask DisposeAsync()
+    {
+        disposed=true;State.Changed-=OnChanged;
+        try{if(navigation is not null){await navigation.InvokeVoidAsync("closeDrawer");await navigation.DisposeAsync();}}catch(JSException){}catch(InvalidOperationException){}
+        reference?.Dispose();
+    }
 }

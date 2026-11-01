@@ -15,11 +15,37 @@ async def main():
   browser=await p.chromium.launch(executable_path=shutil.which('google-chrome') or shutil.which('chromium'),headless=True,args=['--no-sandbox','--enable-unsafe-swiftshader','--use-gl=angle','--use-angle=swiftshader'])
   for width,height in [(390,844),(1440,1000),(320,700)]:
    page=await browser.new_page(viewport={'width':width,'height':height},device_scale_factor=1)
-   for name in ['setup','chat','conversation','settings']:
+   for name in ['setup','chat','conversation','settings','drawer']:
     await page.goto(f'{origin}/{name}.html')
     await page.screenshot(path=str(ROOT/f'{name}-{width}.png'),full_page=True)
     problems=await page.evaluate('''() => ({overflow:document.documentElement.scrollWidth>innerWidth,controls:[...document.querySelectorAll('input,button,textarea,select')].filter(e=>e.getBoundingClientRect().width>0&&e.getBoundingClientRect().right>innerWidth+1).map(e=>e.outerHTML.slice(0,100))})''')
     print(name,width,problems)
+    if name!='setup':
+     nav=page.locator('.bottom-navigation')
+     assert await nav.locator('button').count()==5
+     box=await nav.bounding_box()
+     assert abs(box['y']+box['height']-height)<2, (name,width,box)
+    if name=='drawer':
+     assert await page.locator('[role="dialog"][aria-label="Workspace menu"]').is_visible()
+     assert await page.locator('.drawer-navigation button').count()==8
+     assert await page.locator('.drawer-navigation .active').inner_text()=='Settings'
+     assert await page.locator('main').get_attribute('inert') is not None
+     await page.evaluate("""async()=>{
+      const navigation=await import('./_content/Atlas.UI/atlas-navigation.js');
+      navigation.openDrawer(document.querySelector('.workspace-drawer'),{invokeMethodAsync:async()=>{
+       document.querySelectorAll('[inert]').forEach(e=>e.removeAttribute('inert'));
+       document.querySelector('.workspace-drawer').remove();document.querySelector('.drawer-backdrop').remove();
+       navigation.closeDrawer();window.drawerClosed=true;
+      }},'workspace-more-button');
+     }""")
+     for _ in range(11):
+      await page.keyboard.press('Tab')
+      assert await page.evaluate("document.querySelector('.workspace-drawer').contains(document.activeElement)")
+     await page.keyboard.press('Shift+Tab')
+     assert await page.evaluate("document.querySelector('.workspace-drawer').contains(document.activeElement)")
+     await page.keyboard.press('Escape')
+     await page.wait_for_function('window.drawerClosed===true')
+     assert await page.evaluate("document.activeElement.id")=='workspace-more-button' 
     assert not problems['overflow'], f'{name} at {width}px overflows the viewport'
     assert not problems['controls'] or name!='setup', f'Setup controls clipped at {width}px'
    await page.close()

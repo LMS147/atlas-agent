@@ -7,6 +7,7 @@ public partial class MainPage : ContentPage
     public MainPage(AppState state){InitializeComponent();this.state=state;}
     protected override bool OnBackButtonPressed()
     {
+        if(state.DrawerOpen){state.SetDrawer(false);return true;}
         if(state.Busy)return true;
         if(state.BackHandler is not null || state.Connected && state.Page!="Chat")
         { _ = state.BackAsync();return true; }

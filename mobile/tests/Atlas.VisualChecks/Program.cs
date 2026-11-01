@@ -21,6 +21,8 @@ cache.Put(repo.Scope,"messages","m1",new LocalMessage("m1","c1","r1","user","Hel
 cache.Put(repo.Scope,"messages","m2",new LocalMessage("m2","c1","r1","assistant","Let’s start with the outcome. What would you like to accomplish, and what does a successful first version look like?",2));
 await renderer.Dispatcher.InvokeAsync(state.Notify);await Save("conversation");
 await renderer.Dispatcher.InvokeAsync(()=>state.NavigateAsync("Settings"));await Save("settings");
+await renderer.Dispatcher.InvokeAsync(()=>state.SetDrawer(true));await Save("drawer");
+await renderer.Dispatcher.InvokeAsync(()=>state.SetDrawer(false));
 await File.WriteAllTextAsync(Path.Combine(output,"3d.html"),"""
 <!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="atlas.css"></head><body><div class="atlas-character"><div id="stage" class="atlas-stage"><canvas id="canvas"></canvas></div></div><script type="module">import {buildAtlas} from './_content/Atlas.UI/atlas-3d.js';window.atlas=buildAtlas(document.getElementById('canvas'),document.getElementById('stage'));</script></body></html>
 """);
