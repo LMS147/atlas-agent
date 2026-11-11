@@ -1,12 +1,12 @@
 <section class="page"><span class="eyebrow">PERSONAL CONTEXT</span><h1>Memory</h1>
 <div class="toolbar"><button class="primary" disabled="@State.Busy" @onclick="New">Remember</button><button disabled="@State.Busy" @onclick="()=>State.Run(()=>State.Repo.RefreshMemoryAsync())">Refresh</button><button disabled="@State.Busy" @onclick="Preview">Preview compaction</button></div>
 <label for="search">Search memories</label><input id="search" @bind="search" @bind:event="oninput" placeholder="Search facts or sections" />
-<select @bind="filter" aria-label="Memory section filter"><option>All</option>@foreach(var section in sections){<option>@section</option>}</select>
+<select @bind="filter" aria-label="Memory section filter"><option>All</option>@foreach(var section in sections){<option>@(section)</option>}</select>
 @foreach(var item in State.Repo.Memories.Where(x=>(filter=="All"||x.Section==filter) && (x.Fact.Contains(search,StringComparison.OrdinalIgnoreCase)||x.Section.Contains(search,StringComparison.OrdinalIgnoreCase))))
 {
     <article class="card" @key="item.Id"><span class="eyebrow">@item.Section</span><p>@item.Fact</p><div class="toolbar"><button disabled="@State.Busy" @onclick="()=>Edit(item)">Edit</button><button class="danger" disabled="@State.Busy" @onclick="()=>Delete(item.Id)">Delete…</button></div></article>
 }
-@if(editing){<div class="dialog-backdrop"><section class="dialog form-grid" role="dialog" aria-modal="true" aria-label="Memory editor"><h2>@(id is null?"Remember a fact":"Edit memory")</h2><label>Section<select @bind="selected">@foreach(var section in sections){<option>@section</option>}</select></label><label>Fact<textarea @bind="fact" @bind:event="oninput" maxlength="300" rows="4"></textarea></label><small>@fact.Length/300 characters</small>
+@if(editing){<div class="dialog-backdrop"><section class="dialog form-grid" role="dialog" aria-modal="true" aria-label="Memory editor"><h2>@(id is null?"Remember a fact":"Edit memory")</h2><label>Section<select @bind="selected">@foreach(var section in sections){<option>@(section)</option>}</select></label><label>Fact<textarea @bind="fact" @bind:event="oninput" maxlength="300" rows="4"></textarea></label><small>@fact.Length/300 characters</small>
 @if(State.Error is not null){<p class="error">@State.Error</p>}
 <div class="toolbar"><button class="primary" disabled="@(State.Busy || string.IsNullOrWhiteSpace(fact))" @onclick="Save">Save</button><button disabled="@State.Busy" @onclick="()=>editing=false">Cancel</button></div></section></div>}
 @if(plan is not null){<div class="dialog-backdrop"><section class="dialog" role="dialog" aria-modal="true" aria-label="Compaction preview"><h2>Compact memory?</h2><p>@plan.BeforeChars → @plan.AfterChars characters. @plan.RemovedEntries duplicate entries removed.</p><p>Only exact duplicate facts and repeated blank lines are removed. Unique facts and other Markdown are preserved. Changes are backed up.</p>

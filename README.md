@@ -88,3 +88,7 @@ The Android Files screen uploads/downloads documents through the system picker a
 ## Live chat streaming (0.9.0)
 
 The MAUI app displays live reply text from an updated API while keeping completed replies and duplicate-request protection in SQLite. Interrupted streams use the existing saved-reply status check. Older servers retain ordinary chat through capability negotiation. See [streaming protocol, limits and upgrade steps](docs/chat-streaming.md). Upgrade the backend and reconnect the app to enable streaming; this source update does not deploy the live server automatically.
+
+## Separate applications
+
+Atlas is the AI companion app. Host Dashboard, Services, Connections, Logs and Settings are provided by the independent [Server-management app](https://github.com/LMS147/Server-management). Server monitoring has moved there, including removal of the Atlas `/monitoring` endpoint.

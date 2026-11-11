@@ -34,7 +34,6 @@
                 case "Memory":<Memory />break;
                 case "Files":<Files />break;
                 case "Tools":<Tools />break;
-                case "Monitoring":<Monitoring />break;
                 case "Profile":<ProfilePage />break;
                 case "Settings":<Settings />break;
             }
@@ -62,7 +61,7 @@
 </CascadingValue>
 @code {
     private readonly string[] primaryPages=["Chat","Memory","Atlas","Files"];
-    private readonly string[] drawerPages=["Chat","Conversations","Memory","Profile","Files","Tools","Monitoring","Settings"];
+    private readonly string[] drawerPages=["Chat","Conversations","Memory","Profile","Files","Tools","Settings"];
     private ElementReference drawer;
     private IJSObjectReference? navigation;
     private DotNetObjectReference<AtlasRoot>? reference;
@@ -89,8 +88,13 @@
         }
         catch(JSException){}catch(InvalidOperationException){}
     }
-    private static string PageLabel(string page)=>page switch {"Profile"=>"Agent profile","Monitoring"=>"Server status",_=>page};
-    private static string PageIcon(string page)=>page switch {"Atlas"=>"spark","Chat"=>"chat","Conversations"=>"history","Memory"=>"memory","Files"=>"files","Tools"=>"tools","Monitoring"=>"server","Profile"=>"profile",_=>"settings"};
+    private static string PageLabel(string page) => page switch { "Profile" => "Agent profile", _ => page };
+    private static string PageIcon(string page) => page switch
+    {
+        "Atlas" => "spark", "Chat" => "chat", "Conversations" => "history",
+        "Memory" => "memory", "Files" => "files", "Tools" => "tools",
+        "Profile" => "profile", _ => "settings"
+    };
     public async ValueTask DisposeAsync()
     {
         disposed=true;State.Changed-=OnChanged;

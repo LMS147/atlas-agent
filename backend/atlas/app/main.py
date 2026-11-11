@@ -3,7 +3,6 @@ from contextlib import asynccontextmanager
 from functools import partial
 import logging
 import time
-import threading
 from concurrent.futures import ThreadPoolExecutor
 from filelock import FileLock, Timeout
 from fastapi import FastAPI, Request
@@ -53,27 +52,6 @@ def create_app(settings: Settings | None = None, agent_runner=None, streaming_ru
     def readiness():
         # Public platform probe; never return tokens, version, metrics or workspace data.
         return Response(status_code=204 if app.state.ready else 503)
-
-    app.state.metrics_lock = threading.Lock()
-    app.state.metrics = dict(requests=0, errors=0, active_requests=0)
-
-    @app.middleware("http")
-    async def count_requests(request: Request, call_next):
-        with app.state.metrics_lock:
-            app.state.metrics["requests"] += 1
-            app.state.metrics["active_requests"] += 1
-        failed = False
-        try:
-            response = await call_next(request)
-            failed = response.status_code >= 500
-            return response
-        except Exception:
-            failed = True
-            raise
-        finally:
-            with app.state.metrics_lock:
-                app.state.metrics["active_requests"] -= 1
-                app.state.metrics["errors"] += int(failed)
 
     for module in (chat, memory, files, system, conversations):
         app.include_router(module.router, prefix="/api/v1")

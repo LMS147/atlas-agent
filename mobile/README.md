@@ -65,3 +65,5 @@ Primary navigation stays at the bottom: Chat, Memory, Atlas, Files, and More. Mo
 With an updated backend advertising `streaming_chat: true` in authenticated health, the app uses POST `chat/stream` and shows live reply text. Older backends keep the ordinary request/reply path. Reconnect the app after upgrading the API so it refreshes capabilities. Partial text is transient and labelled in progress; only the final committed reply becomes a saved assistant message. A disconnected or malformed stream becomes recoverable: use Check for reply, never an automatic new inference request. Voice playback is available for completed replies.
 
 See [streaming protocol and deployment](../docs/chat-streaming.md).
+
+Host monitoring and service recovery are provided by the separate Server-management app. Atlas keeps AI chat, conversations, memory, workspace files, tools and the companion.
