@@ -30,7 +30,7 @@ Chat routes invoke the existing synchronous Groq agent from worker-thread route 
 
 The existing Python memory backend still uses local Markdown or GitHub storage. Local file locks and atomic replacement let Telegram and the API share memory. Telegram's own conversation sessions remain in RAM and separate from API histories.
 
-Termux has a managed termux-services/runit API service with a separate boot hook, crash backoff, rotated logs, and authenticated process-aware health. Its default start/stop/health scripts delegate to that registration, with manual fallback when unregistered. The original Telegram scripts remain under explicit *-telegram.sh names. Existing Render/Fly configurations still serve Telegram. Cloudflare instructions describe HTTPS forwarding; no tunnel is configured automatically.
+Host startup, service control, SSH, Cloudflare and backup tooling are maintained in the separate [Server-management repository](https://github.com/LMS147/Server-management). Atlas exposes authenticated process-aware health for that manager. Application-specific Render/Fly configurations remain here for API or Telegram deployment.
 
 ## Remaining features
 

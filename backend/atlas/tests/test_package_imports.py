@@ -20,24 +20,9 @@ class BackendSeparationTests(unittest.TestCase):
         from pathlib import Path
         from backend.atlas.app import config
         from backend.atlas.app.services import memory_service
-        from backend.server import termux_service
 
         root = Path(__file__).resolve().parents[3]
         self.assertEqual(root / "backend", config.BACKEND_DIR)
         self.assertEqual(root / "backend/atlas/seed", config.SEED_DIR)
         self.assertEqual(config.SEED_DIR, memory_service.SEED_DIR)
         self.assertTrue((config.SEED_DIR / "agent.md").is_file())
-        self.assertEqual(root, termux_service.ROOT)
-
-    def test_service_entrypoint(self):
-        import subprocess
-        import sys
-        from pathlib import Path
-
-        root = Path(__file__).resolve().parents[3]
-        result = subprocess.run(
-            [sys.executable, "-m", "backend.server.termux_service", "--help"],
-            cwd=root, capture_output=True, text=True, timeout=10,
-        )
-        self.assertEqual(0, result.returncode, result.stderr)
-        self.assertIn("install", result.stdout)

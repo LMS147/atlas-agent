@@ -2,7 +2,7 @@
 
 Atlas personal AI companion: a .NET MAUI Blazor Hybrid client alongside the Python/FastAPI/Groq backend and existing Telegram agent. The retired Kotlin Android client has been removed; use `mobile/` for the Android and Windows app.
 
-See [backend package layout and commands](backend/README.md) for the Atlas/server separation.
+This repository contains the Atlas mobile app and AI backend. Phone host management is maintained in [Server-management](https://github.com/LMS147/Server-management). See [Atlas backend commands](backend/README.md).
 
 ## Project structure
 
@@ -16,9 +16,6 @@ See [backend package layout and commands](backend/README.md) for the Atlas/serve
 | `backend/atlas/telegram/` | Existing Telegram transport |
 | `backend/atlas/seed/` | Initial agent identity and memory |
 | `backend/atlas/tests/` | Atlas application regression checks |
-| `backend/server/` | Phone host startup, SSH/Cloudflare scripts, Atlas service management and tests |
-| `deployment/termux/` | Supervised API service, boot hook, crash recovery, rotated logs; separate Telegram helpers |
-| `deployment/cloudflare/` | HTTPS tunnel connection instructions |
 | `docs/` | Architecture, API contract, and setup |
 | `.github/workflows/` | Android build and backend tests |
 
@@ -29,7 +26,7 @@ Start the existing Telegram agent from the repository root with `python -m backe
 - [MAUI Blazor Hybrid client and build instructions](mobile/README.md)
 - [Setup and migration instructions](docs/setup.md)
 - [Test the Android API on Render](deployment/render/README.md)
-- [Termux API service installation](deployment/termux/README.md)
+- [Termux API service installation](https://github.com/LMS147/Server-management/blob/main/deployment/termux/README.md)
 - [Architecture and implementation status](docs/architecture.md)
 - [Android API contract](docs/api.md)
 - [Legacy Telegram deployment guide](docs/telegram-legacy.md)
@@ -75,7 +72,7 @@ Recommended order: permanent APK signing, backups and recovery, then real-device
 | Character | Existing live 3D companion retained | Closer mascot model, expressions and speech synchronisation |
 
 - [Permanent signing setup](docs/android-release.md)
-- [Workspace backup and recovery](deployment/backup/README.md)
+- [Workspace backup and recovery](https://github.com/LMS147/Server-management/blob/main/deployment/backup/README.md)
 - [Real-device acceptance checklist](docs/device-acceptance.md)
 - [MAUI migration status](docs/migration-status.md)
 

@@ -37,9 +37,3 @@ local.properties
 *.nupkg
 *.msix
 *.msixbundle
-
-# Phone host credentials and runtime state
-/token.txt
-**/token.txt
-/server/logs/
-/server/.run/
