@@ -6,6 +6,7 @@
 | `atlas/telegram/` | Atlas Telegram transport |
 | `atlas/seed/` | Initial identity and memory documents |
 | `atlas/tests/` | Atlas application regression tests |
+| `server/termux/` | Host SSH, Cloudflare retry and boot scripts from the phone-server guide |
 | `server/termux_service.py` | Install and control the supervised Atlas API process |
 | `server/healthcheck.py` | Authenticated local API health probe |
 | `server/tests/` | Service installation, lifecycle and restart tests |
@@ -66,3 +67,5 @@ Telegram process should be stopped before updating, then started with
 
 Tailscale recovery and APK recovery buttons remain follow-up work under
 `server/` and `mobile/`.
+
+See [phone host scripts and installation](server/README.md) for the independent SSH/Cloudflare setup.

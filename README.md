@@ -16,7 +16,7 @@ See [backend package layout and commands](backend/README.md) for the Atlas/serve
 | `backend/atlas/telegram/` | Existing Telegram transport |
 | `backend/atlas/seed/` | Initial agent identity and memory |
 | `backend/atlas/tests/` | Atlas application regression checks |
-| `backend/server/` | Phone service installation, health checks and lifecycle tests |
+| `backend/server/` | Phone host startup, SSH/Cloudflare scripts, Atlas service management and tests |
 | `deployment/termux/` | Supervised API service, boot hook, crash recovery, rotated logs; separate Telegram helpers |
 | `deployment/cloudflare/` | HTTPS tunnel connection instructions |
 | `docs/` | Architecture, API contract, and setup |
