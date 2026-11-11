@@ -2,18 +2,22 @@
 
 Atlas personal AI companion: a .NET MAUI Blazor Hybrid client alongside the Python/FastAPI/Groq backend and existing Telegram agent. The retired Kotlin Android client has been removed; use `mobile/` for the Android and Windows app.
 
+See [backend package layout and commands](backend/README.md) for the Atlas/server separation.
+
 ## Project structure
 
 | Directory | Purpose |
 |---|---|
 | `mobile/` | .NET MAUI Blazor Hybrid solution: C# core, Razor UI, Android/Windows native host and tests |
-| `backend/app/agent/` | Existing Groq agent loop and tools |
-| `backend/app/services/` | Working Markdown memory service; reserved future services |
-| `backend/app/repositories/` | Existing optional GitHub memory storage |
-| `backend/app/api/` | Authenticated FastAPI endpoints for Android |
-| `backend/telegram/` | Existing Telegram transport |
-| `backend/seed/` | Initial agent identity and memory |
-| `backend/tests/` | Migration and package-import regression checks |
+| `backend/atlas/app/agent/` | Existing Groq agent loop and tools |
+| `backend/atlas/app/services/` | Working Markdown memory service; reserved future services |
+| `backend/atlas/app/repositories/` | Existing optional GitHub memory storage |
+| `backend/atlas/app/api/` | Authenticated FastAPI endpoints for Android |
+| `backend/atlas/telegram/` | Existing Telegram transport |
+| `backend/atlas/seed/` | Initial agent identity and memory |
+| `backend/atlas/tests/` | Atlas application regression checks |
+| `backend/server/` | Phone service installation, health checks and lifecycle tests |
+| `backend/tests/` | Compatibility test discovery for both components |
 | `deployment/termux/` | Supervised API service, boot hook, crash recovery, rotated logs; separate Telegram helpers |
 | `deployment/cloudflare/` | HTTPS tunnel connection instructions |
 | `docs/` | Architecture, API contract, and setup |

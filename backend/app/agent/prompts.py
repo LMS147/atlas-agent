@@ -1,1 +1,9 @@
-"""Prompt assembly currently lives in agent.build_system; extraction is deferred."""
+"""Compatibility import. Implementation lives in backend.atlas.app.agent.prompts."""
+import importlib
+import sys
+
+_module = importlib.import_module("backend.atlas.app.agent.prompts")
+if __name__ == "__main__":
+    _module.main()
+else:
+    sys.modules[__name__] = _module

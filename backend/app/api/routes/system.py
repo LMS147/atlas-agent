@@ -1,21 +1,9 @@
-import time
-import os
-from fastapi import APIRouter, Request
-from backend.app.api.dependencies import Owner
-from backend.app.models.api import AgentProfile, Health
-from backend.app.services import memory_service as memory
+"""Compatibility import. Implementation lives in backend.atlas.app.api.routes.system."""
+import importlib
+import sys
 
-router = APIRouter()
-
-@router.get("/health", response_model=Health)
-def health(request: Request, owner: Owner):
-    return Health(pid=os.getpid(), uptime_seconds=max(0, int(time.monotonic() - request.app.state.started)))
-
-@router.get("/agent", response_model=AgentProfile)
-def profile(owner: Owner):
-    return AgentProfile(content=memory.load_agent())
-
-@router.get("/monitoring")
-def monitoring(request: Request, owner: Owner):
-    from backend.app.services.monitoring_service import snapshot
-    return snapshot(request.app)
+_module = importlib.import_module("backend.atlas.app.api.routes.system")
+if __name__ == "__main__":
+    _module.main()
+else:
+    sys.modules[__name__] = _module

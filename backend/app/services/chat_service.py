@@ -1,8 +1,9 @@
-"""Groq adapters for ordinary and streamed requests."""
-def run_agent(history, message, *, api_key=None):
-    from backend.app.agent import agent
-    return agent.run(history, message, raise_errors=True, groq_api_key=api_key)
+"""Compatibility import. Implementation lives in backend.atlas.app.services.chat_service."""
+import importlib
+import sys
 
-def run_agent_stream(history, message, emit, *, api_key=None):
-    from backend.app.agent import agent
-    return agent.run(history, message, raise_errors=True, groq_api_key=api_key, on_event=emit)
+_module = importlib.import_module("backend.atlas.app.services.chat_service")
+if __name__ == "__main__":
+    _module.main()
+else:
+    sys.modules[__name__] = _module
