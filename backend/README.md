@@ -1,7 +1,5 @@
 # Backend layout
 
-Application code and phone service management have separate packages.
-
 | Directory | Responsibility |
 |---|---|
 | `atlas/app/` | FastAPI routes, Groq agent, conversations, memory, files and monitoring |
@@ -12,7 +10,7 @@ Application code and phone service management have separate packages.
 | `server/healthcheck.py` | Authenticated local API health probe |
 | `server/tests/` | Service installation, lifecycle and restart tests |
 
-From the repository root, the canonical commands are:
+From the repository root:
 
 ```sh
 python -m backend.atlas.app
@@ -21,30 +19,50 @@ python -m backend.server.healthcheck
 python -m backend.server.termux_service status
 ```
 
-Existing commands (`backend.app`, `backend.telegram.bot`, `backend.healthcheck`
-and `backend.termux_service`) remain supported by small compatibility adapters.
-Legacy module imports resolve to the same implementation modules, preserving
-shared memory locks and module state. Existing installed supervisors keep their
-`python -m backend.app` process command so shell lifecycle checks keep working.
+Shared configuration stays in `backend/.env` and dependencies are installed from
+`backend/requirements.txt`. Existing `DATA_DIR`, SQLite data, workspace files and
+credentials retain their locations.
 
-Configuration stays in `backend/.env`. `backend/requirements.txt` remains the
-installation entry point. `DATA_DIR`, existing SQLite data, workspace files and
-credentials keep their existing locations. This refactor does not migrate or
-reset runtime data.
-
-Run all backend tests with the existing discovery command:
-
-```sh
-python -m unittest discover -s backend/tests -v
-```
-
-The files in `backend/tests` are discovery adapters for the tests in the two
-component directories. Each component suite can also run separately:
+Run the component tests separately:
 
 ```sh
 python -m unittest discover -s backend/atlas/tests -v
 python -m unittest discover -s backend/server/tests -v
 ```
 
-This change separates existing functionality. Tailscale recovery commands and
-the APK recovery buttons are follow-up work under `server/` and `mobile/`.
+## Update an existing phone installation
+
+The old Python module entry points have been removed. Before pulling this change,
+stop the existing API using the currently installed checkout:
+
+```sh
+cd ~/server/apps/atlas-agent
+source .venv/bin/activate
+export ATLAS_PYTHON="$PWD/.venv/bin/python"
+bash deployment/termux/service.sh stop
+```
+
+After this PR is merged, update and re-register the service so its run script uses
+`backend.atlas.app`:
+
+```sh
+git pull --ff-only
+python -m pip install -r backend/requirements.txt
+bash deployment/termux/install-service.sh --enable --boot
+bash deployment/termux/service.sh health
+```
+
+If the checkout was already updated, stop the old supervised API directly before
+re-registering:
+
+```sh
+sv -w 30 down "$PREFIX/var/service/atlas-api"
+```
+
+Wait for shutdown to finish before running the installer. Update any personal
+scripts that launch the previous Python module paths. A manually launched
+Telegram process should be stopped before updating, then started with
+`python -m backend.atlas.telegram.bot` or the updated Telegram helper.
+
+Tailscale recovery and APK recovery buttons remain follow-up work under
+`server/` and `mobile/`.

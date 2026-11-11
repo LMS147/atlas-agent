@@ -50,7 +50,7 @@ def install_service(root: Path, prefix: Path, python: str, boot_dir: Path | None
     if first_install:
         (service / "down").touch()  # Configure first; enabling is a separate, explicit operation.
     q = shlex.quote
-    _write(service / "run", f"#!{shell}\nexec 2>&1\ncd {q(str(root))}\nexec {q(executable)} -m backend.app\n")
+    _write(service / "run", f"#!{shell}\nexec 2>&1\ncd {q(str(root))}\nexec {q(executable)} -m backend.atlas.app\n")
     _write(service / "finish", f'#!{shell}\nif [ "${{1:-0}}" != 0 ] || [ "${{2:-0}}" != 0 ]; then sleep 5; fi\n')
     _write(service / "log" / "run", f"#!{shell}\nexec {q(str(prefix / 'bin' / 'svlogd'))} -tt {q(str(log_dir))}\n")
     _write(log_dir / "config", "s1048576\nn5\n", 0o600)

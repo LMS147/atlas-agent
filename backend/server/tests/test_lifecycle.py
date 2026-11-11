@@ -65,7 +65,7 @@ class LifecycleTests(unittest.TestCase):
             env = {"PATH": os.environ.get("PATH", ""), "PYTHONPATH": str(repo),
                    "ATLAS_API_TOKEN": token, "GROQ_API_KEY": "test-only", "GH_REPO": "",
                    "DATA_DIR": temporary, "ATLAS_HOST": "127.0.0.1", "ATLAS_PORT": str(port)}
-            process = subprocess.Popen([sys.executable, "-m", "backend.app"], cwd=repo, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            process = subprocess.Popen([sys.executable, "-m", "backend.atlas.app"], cwd=repo, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             def health(headers):
                 connection = http.client.HTTPConnection("127.0.0.1", port, timeout=2)
                 try:

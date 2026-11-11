@@ -7,7 +7,7 @@ services:
     runtime: python
     plan: starter
     buildCommand: pip install -r backend/requirements.txt
-    startCommand: python -m backend.telegram.bot
+    startCommand: python -m backend.atlas.telegram.bot
     disk:
       name: agent-data
       mountPath: /data
