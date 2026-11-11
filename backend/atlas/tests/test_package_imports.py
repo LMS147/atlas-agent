@@ -16,19 +16,6 @@ class PackageImportTests(unittest.TestCase):
         self.assertTrue({"/api/v1/health", "/api/v1/chat", "/api/v1/memory", "/api/v1/agent", "/api/v1/files"}.issubset({route.path for route in app.routes}))
 
 class BackendSeparationTests(unittest.TestCase):
-    def test_legacy_modules_share_canonical_state(self):
-        pairs = [
-            ("backend.app.config", "backend.atlas.app.config"),
-            ("backend.app.services.memory_service", "backend.atlas.app.services.memory_service"),
-            ("backend.app.repositories.sessions", "backend.atlas.app.repositories.sessions"),
-            ("backend.app.main", "backend.atlas.app.main"),
-            ("backend.healthcheck", "backend.server.healthcheck"),
-            ("backend.termux_service", "backend.server.termux_service"),
-        ]
-        for legacy, canonical in pairs:
-            with self.subTest(module=legacy):
-                self.assertIs(importlib.import_module(legacy), importlib.import_module(canonical))
-
     def test_configuration_and_seed_paths_survive_move(self):
         from pathlib import Path
         from backend.atlas.app import config
@@ -42,16 +29,15 @@ class BackendSeparationTests(unittest.TestCase):
         self.assertTrue((config.SEED_DIR / "agent.md").is_file())
         self.assertEqual(root, termux_service.ROOT)
 
-    def test_legacy_and_canonical_service_entrypoints(self):
+    def test_service_entrypoint(self):
         import subprocess
         import sys
         from pathlib import Path
 
         root = Path(__file__).resolve().parents[3]
-        for module in ("backend.termux_service", "backend.server.termux_service"):
-            result = subprocess.run(
-                [sys.executable, "-m", module, "--help"],
-                cwd=root, capture_output=True, text=True, timeout=10,
-            )
-            self.assertEqual(0, result.returncode, result.stderr)
-            self.assertIn("install", result.stdout)
+        result = subprocess.run(
+            [sys.executable, "-m", "backend.server.termux_service", "--help"],
+            cwd=root, capture_output=True, text=True, timeout=10,
+        )
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertIn("install", result.stdout)

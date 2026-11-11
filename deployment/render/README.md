@@ -50,7 +50,7 @@ For durable testing, deliberately upgrade to a paid Web Service and attach a per
 
 - **404 at `/`** is normal; use `/docs` for the API explorer or `/healthz` for the minimal public readiness probe.
 - **401** from `/api/v1/health`: API is running; supply the Atlas bearer token. Do not use this protected endpoint as Render's unauthenticated health check.
-- **Port/startup failure**: verify Root Directory is empty and the start command uses `deployment/render/start.sh`. Do not start `backend.telegram.bot` for Android.
+- **Port/startup failure**: verify Root Directory is empty and the start command uses `deployment/render/start.sh`. Do not start `backend.atlas.telegram.bot` for Android.
 - **Chat 429/502/504**: check Groq quota, model availability and provider credentials in Render. A healthy API does not prove provider access.
 - **Missing data after redeploy**: expected on Free. Use a paid persistent disk or Termux's durable storage for long-lived data.
 

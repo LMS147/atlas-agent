@@ -27,13 +27,13 @@ python -c "import secrets; print(secrets.token_urlsafe(32))"
 Save it only in your local backend/.env and Android's Atlas access-token field. Never commit it or use your Groq key as the Atlas token. Exported environment variables take precedence over backend/.env. Telegram credentials are not required to start the API.
 
 ```sh
-python -m backend.app
+python -m backend.atlas.app
 ```
 
 The launcher loads configuration and starts one Uvicorn worker. Startup initializes seed memory files and SQLite history. Swagger documentation is at http://127.0.0.1:8000/docs; click **Authorize** and enter your Atlas token. Check local authenticated health with:
 
 ```sh
-python -m backend.healthcheck
+python -m backend.server.healthcheck
 ```
 
 An `ok` health result confirms API startup, not a paid Groq inference or provider quota. Chat returns explicit provider failure codes when necessary.
@@ -77,7 +77,7 @@ The original start/stop/health scripts delegate to the installed service. Withou
 The bot remains independent:
 
 ```sh
-python -m backend.telegram.bot
+python -m backend.atlas.telegram.bot
 ```
 
 It still needs TELEGRAM_TOKEN and ALLOWED_USER_IDS in backend/.env, plus GROQ_API_KEY. The former lifecycle helpers are retained as `start-telegram.sh`, `healthcheck-telegram.sh`, and `stop-telegram.sh` under deployment/termux. They use their original `.run/telegram.*` files. Local Markdown memory can be shared with the API; Telegram conversation sessions retain their existing in-memory behavior.
@@ -87,7 +87,8 @@ Existing Render/Fly blueprints and deployment/Dockerfile continue to start **Tel
 ## Tests
 
 ```sh
-python -m unittest discover -s backend/tests -v
+python -m unittest discover -s backend/atlas/tests -v
+python -m unittest discover -s backend/server/tests -v
 python -m compileall -q backend
 bash -n deployment/termux/*.sh
 ```

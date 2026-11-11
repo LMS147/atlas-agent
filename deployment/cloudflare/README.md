@@ -1,6 +1,6 @@
 # HTTPS access for the Atlas API
 
-Start the API locally with `python -m backend.app` and verify `python -m backend.healthcheck`. Its default bind is http://127.0.0.1:8000. Every data route requires the separate ATLAS_API_TOKEN bearer credential.
+Start the API locally with `python -m backend.atlas.app` and verify `python -m backend.server.healthcheck`. Its default bind is http://127.0.0.1:8000. Every data route requires the separate ATLAS_API_TOKEN bearer credential.
 
 For a temporary development URL, install cloudflared for your platform, then run in another terminal:
 

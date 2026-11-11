@@ -14,7 +14,7 @@ Android: Kotlin + Jetpack Compose + Material 3, MVVM, repository interface, Retr
 - `navigation`: app shell, navigation drawer, and shared ViewModel.
 - `ui/theme`: common colors, branding, and components.
 
-Backend: the existing Groq agent, memory service, GitHub storage, Telegram transport, and seed files have moved into Python packages. All runtime imports use `backend.*`; launch from the repository root. This avoids the `backend/telegram` folder shadowing the external `telegram` library. Local memory continues to use `DATA_DIR`, defaulting to `./data` relative to the process working directory. Seed lookup is now relative to the relocated backend package.
+Backend: the existing Groq agent, memory service, GitHub storage, Telegram transport, and seed files have moved into Python packages. All runtime imports use `backend.*`; launch from the repository root. This avoids the `backend/atlas/telegram` folder shadowing the external `telegram` library. Local memory continues to use `DATA_DIR`, defaulting to `./data` relative to the process working directory. Seed lookup is now relative to the relocated backend package.
 
 ## Android live chat
 

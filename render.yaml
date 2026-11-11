@@ -6,7 +6,7 @@ services:
     runtime: python
     plan: free
     buildCommand: pip install -r backend/requirements.txt
-    startCommand: python -m backend.telegram.bot
+    startCommand: python -m backend.atlas.telegram.bot
     envVars:
       - key: PYTHON_VERSION
         value: "3.12"

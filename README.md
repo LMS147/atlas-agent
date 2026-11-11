@@ -17,7 +17,6 @@ See [backend package layout and commands](backend/README.md) for the Atlas/serve
 | `backend/atlas/seed/` | Initial agent identity and memory |
 | `backend/atlas/tests/` | Atlas application regression checks |
 | `backend/server/` | Phone service installation, health checks and lifecycle tests |
-| `backend/tests/` | Compatibility test discovery for both components |
 | `deployment/termux/` | Supervised API service, boot hook, crash recovery, rotated logs; separate Telegram helpers |
 | `deployment/cloudflare/` | HTTPS tunnel connection instructions |
 | `docs/` | Architecture, API contract, and setup |
@@ -25,7 +24,7 @@ See [backend package layout and commands](backend/README.md) for the Atlas/serve
 
 For the new C# client, open **[mobile/Atlas.sln](mobile/Atlas.sln)** in Visual Studio with the .NET 10 MAUI workload. See [the migration guide](docs/maui-migration.md). It installs alongside Kotlin as **Atlas**, with its own cache and credentials. Connect to restore conversations held by your backend.
 
-Start the existing Telegram agent from the repository root with `python -m backend.telegram.bot` after installing `backend/requirements.txt` and configuring `backend/.env`.
+Start the existing Telegram agent from the repository root with `python -m backend.atlas.telegram.bot` after installing `backend/requirements.txt` and configuring `backend/.env`.
 
 - [MAUI Blazor Hybrid client and build instructions](mobile/README.md)
 - [Setup and migration instructions](docs/setup.md)
@@ -37,7 +36,7 @@ Start the existing Telegram agent from the repository root with `python -m backe
 
 ## Status
 
-Android v0.5 adds workspace file controls, memory maintenance and live monitoring, building on reply recovery and supervised Termux service setup. The project also includes named persistent conversations, full server transcript restore, paged history, remembered selection, renaming, and confirmed deletion. Live chat also includes durable delivery status, waiting indicators, safe reply recovery, and confirmed resends. Existing local history is preserved by a Room migration. The Android frontend and API share a working contract: authenticated health, Groq-backed chat, memory management, agent profile, managed file access, and monitoring. Conversation metadata, full completed transcripts, bounded AI context, and duplicate-request responses persist in SQLite. Markdown memory stays compatible with Telegram. Configure backend/.env and run `python -m backend.app`; see the setup guide for HTTPS access and Termux helpers.
+Android v0.5 adds workspace file controls, memory maintenance and live monitoring, building on reply recovery and supervised Termux service setup. The project also includes named persistent conversations, full server transcript restore, paged history, remembered selection, renaming, and confirmed deletion. Live chat also includes durable delivery status, waiting indicators, safe reply recovery, and confirmed resends. Existing local history is preserved by a Room migration. The Android frontend and API share a working contract: authenticated health, Groq-backed chat, memory management, agent profile, managed file access, and monitoring. Conversation metadata, full completed transcripts, bounded AI context, and duplicate-request responses persist in SQLite. Markdown memory stays compatible with Telegram. Configure backend/.env and run `python -m backend.atlas.app`; see the setup guide for HTTPS access and Termux helpers.
 
 Task automation, multi-user accounts, and permanent tunnel setup remain future work. MAUI CI builds the Android debug APK. Backend tests cover authentication, persistence, concurrency, provider errors, model-tool memory saves, and local HTTP startup using mocked provider responses. Real Groq/tunnel/device integration requires your configured server and credentials.
 

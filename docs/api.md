@@ -1,6 +1,6 @@
 # Atlas API v1
 
-The FastAPI backend implements the contract used by the current Android app. Start it from the repository root with `python -m backend.app` after configuring backend/.env. It binds to `127.0.0.1:8000` by default; expose it to Android through authenticated HTTPS, such as Cloudflare Tunnel.
+The FastAPI backend implements the contract used by the current Android app. Start it from the repository root with `python -m backend.atlas.app` after configuring backend/.env. It binds to `127.0.0.1:8000` by default; expose it to Android through authenticated HTTPS, such as Cloudflare Tunnel.
 
 ## Authentication
 

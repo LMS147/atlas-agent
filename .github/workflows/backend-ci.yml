@@ -24,6 +24,7 @@ jobs:
       - run: pip install -r backend/requirements.txt
       - run: python -m unittest discover -s deployment/backup -p 'test_*.py' -v
       - run: python -m compileall -q backend
-      - run: python -m unittest discover -s backend/tests -v
+      - run: python -m unittest discover -s backend/atlas/tests -v
+      - run: python -m unittest discover -s backend/server/tests -v
       - run: bash -n deployment/termux/*.sh
       - run: bash -n deployment/render/*.sh
