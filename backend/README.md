@@ -1,71 +1,31 @@
-# Backend layout
+# Atlas backend
+
+This backend contains the Atlas AI application under `atlas/`.
 
 | Directory | Responsibility |
 |---|---|
-| `atlas/app/` | FastAPI routes, Groq agent, conversations, memory, files and monitoring |
+| `atlas/app/` | FastAPI routes, Groq agent, conversations, memory, files and in-app monitoring |
 | `atlas/telegram/` | Atlas Telegram transport |
-| `atlas/seed/` | Initial identity and memory documents |
-| `atlas/tests/` | Atlas application regression tests |
-| `server/termux/` | Host SSH, Cloudflare retry and boot scripts from the phone-server guide |
-| `server/termux_service.py` | Install and control the supervised Atlas API process |
-| `server/healthcheck.py` | Authenticated local API health probe |
-| `server/tests/` | Service installation, lifecycle and restart tests |
+| `atlas/seed/` | Initial agent identity and memory |
+| `atlas/tests/` | Application, API and startup regression tests |
 
 From the repository root:
 
 ```sh
-python -m backend.atlas.app
-python -m backend.atlas.telegram.bot
-python -m backend.server.healthcheck
-python -m backend.server.termux_service status
-```
-
-Shared configuration stays in `backend/.env` and dependencies are installed from
-`backend/requirements.txt`. Existing `DATA_DIR`, SQLite data, workspace files and
-credentials retain their locations.
-
-Run the component tests separately:
-
-```sh
-python -m unittest discover -s backend/atlas/tests -v
-python -m unittest discover -s backend/server/tests -v
-```
-
-## Update an existing phone installation
-
-The old Python module entry points have been removed. Before pulling this change,
-stop the existing API using the currently installed checkout:
-
-```sh
-cd ~/server/apps/atlas-agent
-source .venv/bin/activate
-export ATLAS_PYTHON="$PWD/.venv/bin/python"
-bash deployment/termux/service.sh stop
-```
-
-After this PR is merged, update and re-register the service so its run script uses
-`backend.atlas.app`:
-
-```sh
-git pull --ff-only
 python -m pip install -r backend/requirements.txt
-bash deployment/termux/install-service.sh --enable --boot
-bash deployment/termux/service.sh health
+python -m backend.atlas.app
+python -m backend.atlas.healthcheck
+python -m backend.atlas.telegram.bot
+python -m unittest discover -s backend/atlas/tests -v
 ```
 
-If the checkout was already updated, stop the old supervised API directly before
-re-registering:
+Configure `backend/.env` and retain the existing DATA_DIR when updating. The Atlas
+health probe is application-specific and uses the same configuration as the API.
 
-```sh
-sv -w 30 down "$PREFIX/var/service/atlas-api"
-```
-
-Wait for shutdown to finish before running the installer. Update any personal
-scripts that launch the previous Python module paths. A manually launched
-Telegram process should be stopped before updating, then started with
-`python -m backend.atlas.telegram.bot` or the updated Telegram helper.
-
-Tailscale recovery and APK recovery buttons remain follow-up work under
-`server/` and `mobile/`.
-
-See [phone host scripts and installation](server/README.md) for the independent SSH/Cloudflare setup.
+Phone startup, SSH, Cloudflare, service control, workspace backup tools and their
+tests live in [Server-management](https://github.com/LMS147/Server-management).
+Install/configure that repository before pulling an update that removes the old
+management paths. Follow its [migration guide](https://github.com/LMS147/Server-management/blob/main/docs/migration.md).
+Existing installed supervisor scripts continue launching this checkout's
+`backend.atlas.app` with its existing Python interpreter. Personal commands that
+reference this checkout's removed management scripts need the new repository path.

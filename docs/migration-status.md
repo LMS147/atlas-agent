@@ -8,7 +8,7 @@ Connect MAUI to the same server with the same token to restore conversations sto
 
 1. Keep the Kotlin app installed and check unresolved requests on the original server before retrying them.
 2. Verify server-backed conversations are visible in MAUI. Load earlier history where required.
-3. Make a verified server workspace backup using `deployment/backup/atlas_backup.py`.
+3. Make a verified server workspace backup using `deployment/backup/atlas_backup.py` from the separate [Server-management repository](https://github.com/LMS147/Server-management).
 4. Preserve device-only messages using the existing app or developer-assisted database extraction on a testable device. A supported Kotlin export/MAUI import flow is **still pending**. Do not uninstall the legacy app assuming the server holds its entire local history.
 5. Test permanently signed APK updates on a spare device. A new signing key cannot replace a differently signed development installation in place.
 

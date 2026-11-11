@@ -100,7 +100,7 @@ New Android clients send `require_existing:true` on chat requests. Missing conve
 
 Groq 429 responses now include a bounded Retry-After delay in seconds (1–3600; default 30 if unavailable/invalid). Android displays it and requires explicit resend confirmation; it does not automatically create new inference requests.
 
-Health now also includes the API process `pid` for the local supervisor's authenticated readiness check. It does not measure provider quota or external tunnel availability. An exclusive process lock is held for the API lifespan in DATA_DIR/.atlas-api.lock. Duplicate startups fail before memory/session initialization; OS process exit releases the lock. Use a single API worker. Termux supervision/boot setup is documented in ../deployment/termux/README.md.
+Health now also includes the API process `pid` for the local supervisor's authenticated readiness check. It does not measure provider quota or external tunnel availability. An exclusive process lock is held for the API lifespan in DATA_DIR/.atlas-api.lock. Duplicate startups fail before memory/session initialization; OS process exit releases the lock. Use a single API worker. Termux supervision/boot setup is maintained in [Server-management](https://github.com/LMS147/Server-management/blob/main/deployment/termux/README.md).
 
 ### Files and memory management (v0.5)
 
