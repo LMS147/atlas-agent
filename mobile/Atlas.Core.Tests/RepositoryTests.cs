@@ -100,10 +100,9 @@ public sealed class RepositoryTests : IDisposable
         await api.UploadAsync("binary.bin",bytes);Assert.Equal(bytes,await api.DownloadAsync("workspace/binary.bin"));
         await Assert.ThrowsAsync<ArgumentException>(()=>AtlasApi.ReadBoundedAsync(new MemoryStream(new byte[AtlasApi.MaxFileBytes+1])));
     }
-    [Fact] public async Task MetricsKeepRestrictedValuesNullAndFileEditsIncludeRevision()
+    [Fact] public async Task FileEditsIncludeRevision()
     {
-        using var repo=Repo();await Connect(repo);response=(request,body)=>request.Method==HttpMethod.Put?Json(new FileItem("test.txt","workspace/test.txt",false,3,true)):Json(new Atlas.Core.Monitoring(1,null,1.5,null,null,null,null,new(1,2,3,4,0,1),["device CPU"]));
-        var metrics=await repo.MonitoringAsync();Assert.Null(metrics.Ram);Assert.Null(metrics.DeviceCpuPercent);
+        using var repo=Repo();await Connect(repo);response=(request,body)=>Json(new FileItem("test.txt","workspace/test.txt",false,3,true));
         var revision=new string('a',64);await repo.EditFileAsync(new FileDocument("workspace/test.txt","old",revision,true),"new");
         var edit=JsonDocument.Parse(calls.Last().Body);Assert.Equal(revision,edit.RootElement.GetProperty("revision").GetString());
     }

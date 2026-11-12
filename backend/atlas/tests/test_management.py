@@ -1,4 +1,4 @@
-"""Authenticated file, memory and live metrics contract tests."""
+"""Authenticated file and memory contract tests."""
 import hashlib
 import os
 from pathlib import Path
@@ -35,7 +35,7 @@ class ManagementTests(unittest.TestCase):
             ('PUT','files/text?path=workspace/test.txt',{'json':dict(content='x',revision='a'*64)}),
             ('PATCH','memory/'+'a'*64,{'json':dict(section='Projects',fact='x')}),
             ('DELETE','memory/'+'a'*64,{}),('GET','memory/compact',{}),
-            ('POST','memory/compact',{'json':dict(revision='a'*64)}),('GET','monitoring',{})]:
+            ('POST','memory/compact',{'json':dict(revision='a'*64)})]:
             self.assertEqual(401,self.client.request(method,'/api/v1/'+path,**kwargs).status_code,path)
         self.assertFalse((self.root/'workspace/test.txt').exists())
 
@@ -100,16 +100,3 @@ class ManagementTests(unittest.TestCase):
         self.assertIn('Custom prose stays.',memory.load_memory());self.assertIn('- Never discard me',memory.load_memory())
         self.assertEqual(1,memory.load_memory().count('Keep this'))
         self.assertEqual(409,self.client.post('/api/v1/memory/compact',json={'revision':plan['revision']},headers=AUTH).status_code)
-
-    def test_metrics_actual_values_and_permission_denied(self):
-        data=self.client.get('/api/v1/monitoring',headers=AUTH).json()
-        self.assertEqual(os.getpid(),data['service']['pid'])
-        self.assertGreater(data['storage']['total_bytes'],0)
-        self.assertGreaterEqual(data['process_cpu_percent'],0)
-        self.assertGreaterEqual(data['service']['requests'],1)
-        with patch.object(Path,'read_text',side_effect=PermissionError('Android blocks proc')):
-            data=self.client.get('/api/v1/monitoring',headers=AUTH).json()
-        self.assertIsNone(data['ram']);self.assertIsNone(data['device_cpu_percent'])
-        self.assertIsNone(data['process_rss_bytes'])
-        self.assertIn('device RAM',data['unavailable'])
-        self.assertGreater(data['storage']['free_bytes'],0)

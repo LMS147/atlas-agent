@@ -15,11 +15,6 @@ public sealed record Profile(string Name, string Content);
 public sealed record FileItem(string Name, string Path, bool Directory, long SizeBytes, bool Writable);
 public sealed record FileDocument(string Path, string Content, string Revision, bool Writable);
 public sealed record CompactPlan(string Revision, int BeforeChars, int AfterChars, int RemovedEntries);
-public sealed record Ram(long TotalBytes, long AvailableBytes, long UsedBytes);
-public sealed record Disk(long TotalBytes, long UsedBytes, long FreeBytes);
-public sealed record ServiceMetrics(int Pid, long UptimeSeconds, int Threads, long Requests, long Errors, int ActiveRequests);
-public sealed record Monitoring(long SampledAt, double? DeviceCpuPercent, double ProcessCpuPercent, Ram? Ram, long? ProcessRssBytes,
-    Disk? Storage, long? DeviceUptimeSeconds, ServiceMetrics Service, List<string> Unavailable);
 public enum Delivery { Pending, Sent, Recoverable, NotReceived, Failed }
 public sealed record LocalMessage(string Id, string ConversationId, string RequestId, string Role, string Text, long CreatedAt,
     Delivery Delivery = Delivery.Sent, string? Error = null);

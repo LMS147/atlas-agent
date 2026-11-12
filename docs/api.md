@@ -115,10 +115,10 @@ All endpoints below require the existing bearer token. `GET /files?directory=` l
 - `GET /memory/compact`: preview `{revision,before_chars,after_chars,removed_entries}`.
 - `POST /memory/compact`: `{revision}` applies that preview, or returns 409 if memory changed. Conservative compaction removes normalized exact duplicate bullets within their section and repeated blank lines; it does not summarize, call an LLM, discard unique facts or strip unknown Markdown. Edits/deletes/compaction use the shared memory lock and local backups (last 30); GitHub mode uses commit history.
 
-### Monitoring (v0.5)
+### Server management
 
-`GET /monitoring` samples CPU for 0.2 seconds and returns `sampled_at` (Unix milliseconds), `device_cpu_percent`, `process_cpu_percent`, `ram` (`total_bytes`, `available_bytes`, `used_bytes`), `process_rss_bytes`, `storage` (`total_bytes`, `used_bytes`, `free_bytes`), `device_uptime_seconds`, `service` (`pid`, `uptime_seconds`, Python `threads`, `requests`, `errors`, `active_requests`), and `unavailable` labels. Process CPU counts 100% per core. Storage describes the data directory's filesystem, not the app's file sizes. Counters reset when the API process restarts, count all HTTP requests and 5xx responses, and include the monitoring request itself. Android may deny `/proc/stat`, `/proc/meminfo`, `/proc/uptime` or process RSS reads: affected values are null, never invented zeroes. The app refreshes every 10 seconds while this screen is visible and the app is in the foreground; failed refreshes retain the visibly dated last sample. These are API-process metrics, not claims about Cloudflare or Telegram service health.
-
-## Streamed chat
-
-Authenticated health advertises `streaming_chat: true` for the streaming backend. `POST /api/v1/chat/stream` accepts the existing chat request body and returns SSE status/progress snapshots, a committed complete reply, or a sanitized error event. The ordinary chat and request-status contracts are unchanged. See [streaming protocol and recovery](chat-streaming.md) for event fields, duplicate protection, limits and upgrade steps.
+Host metrics, service controls and server logs are available in the separate
+[Server-management app](https://github.com/LMS147/Server-management). The Atlas
+`/monitoring` endpoint has been removed. Update the Atlas client and use the
+management app for host operations. Atlas `/health` remains available for
+application readiness checks.

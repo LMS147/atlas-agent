@@ -36,7 +36,7 @@ The setup screen pre-fills `https://atlas-api-a9s1.onrender.com/`, but the URL i
 
 The new Android package is **com.atlas.ai.hybrid**, displayed as **Atlas**. It installs alongside **com.atlas.ai** (Kotlin). Both clients remain in this repository during migration. Do not uninstall the old app to install this one.
 
-Implemented: authenticated HTTPS setup; secure optional token restore; named conversations; rename/delete confirmations; selected conversation; paged server history; per-workspace SQLite cache; cached offline opening; durable message state; read-only reply checks; confirmed same-ID delivery retries and fresh requests; memory list/search/filter/create/edit/delete/compaction previews; workspace file upload/download/text editing with revisions; read-only canonical documents/profile; actual monitoring with nullable restricted metrics and foreground-only polling.
+Implemented: authenticated HTTPS setup; secure optional token restore; named conversations; rename/delete confirmations; selected conversation; paged server history; per-workspace SQLite cache; cached offline opening; durable message state; read-only reply checks; confirmed same-ID delivery retries and fresh requests; memory list/search/filter/create/edit/delete/compaction previews; workspace file upload/download/text editing with revisions; read-only canonical documents/profile.
 
 Downloaded files are stored in a uniquely named private cache folder, then opened in the native share sheet. Pick a destination such as Files/Drive or an appropriate app. These temporary cache copies may be cleared by the OS; save important downloads to a chosen destination. Text edits stay open on failed/conflicting saves; unsaved-close prompts before discarding. Confirmed memory/conversation operations act on the SAME backend workspace as the Kotlin app.
 
@@ -65,3 +65,5 @@ Primary navigation stays at the bottom: Chat, Memory, Atlas, Files, and More. Mo
 With an updated backend advertising `streaming_chat: true` in authenticated health, the app uses POST `chat/stream` and shows live reply text. Older backends keep the ordinary request/reply path. Reconnect the app after upgrading the API so it refreshes capabilities. Partial text is transient and labelled in progress; only the final committed reply becomes a saved assistant message. A disconnected or malformed stream becomes recoverable: use Check for reply, never an automatic new inference request. Voice playback is available for completed replies.
 
 See [streaming protocol and deployment](../docs/chat-streaming.md).
+
+Host monitoring and service recovery are provided by the separate Server-management app. Atlas keeps AI chat, conversations, memory, workspace files, tools and the companion.

@@ -29,7 +29,7 @@ async def main():
      assert await page.locator('[role="dialog"][aria-label="Workspace menu"]').is_visible()
      drawer_box=await page.locator('.workspace-drawer').bounding_box()
      assert abs(drawer_box['x'])<1, drawer_box
-     assert await page.locator('.drawer-navigation button').count()==8
+     assert await page.locator('.drawer-navigation button').count()==7
      assert await page.locator('.drawer-navigation .active').inner_text()=='Settings'
      assert await page.locator('main').get_attribute('inert') is not None
      await page.evaluate("""async()=>{

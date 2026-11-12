@@ -33,7 +33,7 @@ Start the existing Telegram agent from the repository root with `python -m backe
 
 ## Status
 
-Android v0.5 adds workspace file controls, memory maintenance and live monitoring, building on reply recovery and supervised Termux service setup. The project also includes named persistent conversations, full server transcript restore, paged history, remembered selection, renaming, and confirmed deletion. Live chat also includes durable delivery status, waiting indicators, safe reply recovery, and confirmed resends. Existing local history is preserved by a Room migration. The Android frontend and API share a working contract: authenticated health, Groq-backed chat, memory management, agent profile, managed file access, and monitoring. Conversation metadata, full completed transcripts, bounded AI context, and duplicate-request responses persist in SQLite. Markdown memory stays compatible with Telegram. Configure backend/.env and run `python -m backend.atlas.app`; see the setup guide for HTTPS access and Termux helpers.
+Android v0.5 adds workspace file controls and memory maintenance, building on reply recovery and supervised Termux service setup. The project also includes named persistent conversations, full server transcript restore, paged history, remembered selection, renaming, and confirmed deletion. Live chat also includes durable delivery status, waiting indicators, safe reply recovery, and confirmed resends. Existing local history is preserved by a Room migration. The Android frontend and API share a working contract: authenticated health, Groq-backed chat, memory management, agent profile and managed file access. Conversation metadata, full completed transcripts, bounded AI context, and duplicate-request responses persist in SQLite. Markdown memory stays compatible with Telegram. Configure backend/.env and run `python -m backend.atlas.app`; see the setup guide for HTTPS access and Termux helpers.
 
 Task automation, multi-user accounts, and permanent tunnel setup remain future work. MAUI CI builds the Android debug APK. Backend tests cover authentication, persistence, concurrency, provider errors, model-tool memory saves, and local HTTP startup using mocked provider responses. Real Groq/tunnel/device integration requires your configured server and credentials.
 
@@ -80,11 +80,15 @@ Recommended order: permanent APK signing, backups and recovery, then real-device
 
 No open-source license has been selected. See LICENSE. The source is not granted an MIT, Apache, or other open-source license by this restructuring.
 
-### v0.5 — File controls, memory maintenance and live monitoring
+### File controls and memory maintenance
 
-The Android Files screen uploads/downloads documents through the system picker and opens UTF-8 workspace files for conflict-safe editing. The Memory screen edits/deletes saved facts and previews conservative, backed-up compaction. Server status samples real CPU/RAM/storage/uptime/API counters every ten seconds while visible, with explicit unavailable values for Android-restricted metrics. See [API contracts](docs/api.md) and [setup](docs/setup.md) for limits and operation.
+The Android Files screen uploads/downloads documents through the system picker and opens UTF-8 workspace files for conflict-safe editing. The Memory screen edits/deletes saved facts and previews conservative, backed-up compaction. Host status and service controls are provided by the separate Server-management application. See [API contracts](docs/api.md) and [setup](docs/setup.md) for limits and operation.
 
 
 ## Live chat streaming (0.9.0)
 
 The MAUI app displays live reply text from an updated API while keeping completed replies and duplicate-request protection in SQLite. Interrupted streams use the existing saved-reply status check. Older servers retain ordinary chat through capability negotiation. See [streaming protocol, limits and upgrade steps](docs/chat-streaming.md). Upgrade the backend and reconnect the app to enable streaming; this source update does not deploy the live server automatically.
+
+## Separate applications
+
+Atlas is the AI companion app. Host Dashboard, Services, Connections, Logs and Settings are provided by the independent [Server-management app](https://github.com/LMS147/Server-management). Server monitoring has moved there, including removal of the Atlas `/monitoring` endpoint.

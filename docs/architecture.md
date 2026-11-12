@@ -34,7 +34,7 @@ Host startup, service control, SSH, Cloudflare and backup tooling are maintained
 
 ## Remaining features
 
-Task/automation modules, multi-user accounts, permanent tunnel integration, and independent domain/data mapping remain future work. Workspace file editing, memory management and monitoring are described below; the canonical profile stays read-only. Public /docs and /openapi.json describe the API; workspace routes require the Atlas token.
+Task/automation modules, multi-user accounts, permanent tunnel integration, and independent domain/data mapping remain future work. Workspace file editing, memory management are described below; the canonical profile stays read-only. Public /docs and /openapi.json describe the API; workspace routes require the Atlas token.
 
 Reserved directories use .gitkeep or Python __init__.py. Their presence does not indicate a completed feature.
 
@@ -50,6 +50,6 @@ A file lock held over the API lifespan enforces one API process per DATA_DIR, be
 
 Android recovery reads a persisted request-status endpoint without starting another inference. Unknown delivery and known failed/interrupted work have distinct confirmation paths. New clients require a known server conversation when posting chat; legacy auto-creation remains compatible for older clients. No Room migration is needed for the new text-based delivery state. Existing SSH and tunnel services remain independently managed.
 
-### Management and monitoring
+### Workspace and memory management
 
-Workspace operations use a dedicated `DATA_DIR/workspace` and a cross-process file lock. Uploads exclusively create names; text edits require a SHA-256 revision and use atomic replacement. Canonical agent/memory documents are never writable through the file API. Memory mutations share Telegram's memory lock, preserve unrelated Markdown, retain backups and reject stale content IDs or compaction revisions. Android uses authenticated Retrofit operations behind the repository and Android document pickers for external file access. Monitoring uses standard-library Linux reads and process accounting, with nullable restricted metrics and a lifecycle-bound ten-second refresh. HTTP metrics are in-memory per-process counters and reset on restart.
+Workspace operations use a dedicated `DATA_DIR/workspace` and a cross-process file lock. Uploads exclusively create names; text edits require a SHA-256 revision and use atomic replacement. Canonical agent/memory documents are never writable through the file API. Memory mutations share Telegram's memory lock, preserve unrelated Markdown, retain backups and reject stale content IDs or compaction revisions. Android uses authenticated Retrofit operations behind the repository and Android document pickers for external file access. Host metrics and service operations are provided by the separate Server-management application over Tailscale SSH.

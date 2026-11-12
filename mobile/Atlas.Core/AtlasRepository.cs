@@ -230,7 +230,6 @@ public sealed class AtlasRepository(CacheStore cache, Func<string,string,AtlasAp
     }
     public Task UploadAsync(string name,byte[] bytes)=>Api.UploadAsync(name,bytes);
     public Task<byte[]> DownloadAsync(string path)=>Api.DownloadAsync(path);
-    public Task<Monitoring> MonitoringAsync()=>Get<Monitoring>("monitoring");
     public void Disconnect(){api?.Dispose();api=null;Scope="";ConversationId="";Offline=false;StreamingChat=false;StreamText="";StreamPhase="";}
     public static string Friendly(Exception e)=>e switch
     {
