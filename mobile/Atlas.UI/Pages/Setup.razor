@@ -1,6 +1,6 @@
 <section class="setup page">
     <div class="setup-intro">
-        <img class="setup-mascot" src="_content/Atlas.UI/atlas/mascot.webp" alt="Atlas, your AI companion" width="80" height="112" />
+        <img class="setup-orb" src="_content/Atlas.UI/atlas/orb.svg" alt="Atlas, your AI companion" width="88" height="88" />
         <span class="eyebrow">YOUR PERSONAL AI WORKSPACE</span>
         <h1>Welcome to Atlas</h1>
         <p class="setup-description">A familiar place for your conversations, ideas, and memories.</p>
@@ -21,7 +21,7 @@
         <p class="security-note"><AtlasIcon Name="lock" /><span>Saved credentials are protected by your device's secure storage.</span></p>
     </div>
 </section>
-@if(showCompanion){<div class="dialog-backdrop"><section class="dialog companion-dialog" role="dialog" aria-modal="true" aria-label="Meet Atlas"><div class="page-heading"><h2>Meet Atlas</h2><button aria-label="Close Atlas preview" @onclick="CloseCompanion">Close</button></div><AtlasCharacter /><div class="companion-actions"><button disabled="@(!State.SpeechAvailable || State.Speaking || !State.IsActive)" @onclick="Hello">Say hello</button>@if(State.Speaking){<button @onclick="State.StopSpeaking">Stop voice</button>}</div><p class="companion-note muted">Drag to turn him. Voice plays only when you ask.</p></section></div>}
+@if(showCompanion){<div class="dialog-backdrop"><section class="dialog companion-dialog" role="dialog" aria-modal="true" aria-label="Meet Atlas"><div class="page-heading"><h2>Meet Atlas</h2><button aria-label="Close Atlas preview" @onclick="CloseCompanion">Close</button></div><AtlasOrb /><div class="companion-actions"><button disabled="@(!State.SpeechAvailable || State.SpeechBusy || !State.IsActive)" @onclick="Hello">Say hello</button>@if(State.SpeechBusy){<button @onclick="State.StopSpeaking">Stop voice</button>}</div><p class="companion-note muted">Voice plays only when you ask.</p></section></div>}
 @code {
     private bool CanConnect { get { try { AtlasApi.Normalize(State.ServerUrl); var value=token.Trim();return value.Length>=32 && value.All(c=>c>=33 && c<=126); } catch(ArgumentException){return false;} } }
     private string token="";private bool remember=true,showToken,showCompanion;

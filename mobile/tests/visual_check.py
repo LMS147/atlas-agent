@@ -12,7 +12,7 @@ async def main():
  threading.Thread(target=server.serve_forever,daemon=True).start()
  origin=f'http://127.0.0.1:{server.server_port}' 
  async with async_playwright() as p:
-  browser=await p.chromium.launch(executable_path=shutil.which('google-chrome') or shutil.which('chromium'),headless=True,args=['--no-sandbox','--enable-unsafe-swiftshader','--use-gl=angle','--use-angle=swiftshader'])
+  browser=await p.chromium.launch(executable_path=shutil.which('google-chrome') or shutil.which('chromium'),headless=True,args=['--no-sandbox'])
   for width,height in [(360,800),(390,844),(768,1024),(1440,1000),(320,700)]:
    page=await browser.new_page(viewport={'width':width,'height':height},device_scale_factor=1)
    for name in ['setup','setup-loading','setup-error','chat','conversation','cached-chat','memory-empty','memory','companion','files','tools','profile','settings','drawer']:
@@ -51,12 +51,16 @@ async def main():
     assert not problems['overflow'], f'{name} at {width}px overflows the viewport'
     assert not problems['controls'], f'Setup controls clipped at {width}px'
     if name=='companion':
-     assert await page.locator('.character-fallback:visible').count()==1
-     assert await page.locator('.atlas-stage canvas:visible').count()==0
-     assert await page.locator('.character-controls:visible').count()==0
+     assert await page.locator('.orb-fallback:visible').count()==1
+     assert await page.locator('.orb-stage canvas:visible').count()==0
+     assert await page.locator('.orb-controls:visible').count()==0
     if name=='profile':
      assert await page.locator('.profile-document h1').inner_text()=='Atlas'
      assert await page.locator('.profile-document li').count()==3
+    if name=='chat':
+     assert await page.locator('.atlas-orb:visible').count()==1
+    if name=='conversation':
+     assert await page.locator('.atlas-orb:visible').count()==0
    # Text scaling and a resized viewport exercise layout, not a native keyboard.
    await page.goto(f'{origin}/files.html')
    await page.add_style_tag(content='body,button,input,textarea,select,small{font-size:20px!important}')
@@ -82,30 +86,35 @@ async def main():
   page=await browser.new_page(viewport={'width':390,'height':600})
   errors=[]
   page.on('pageerror',lambda error: errors.append(str(error)))
-  await page.goto(f'{origin}/3d.html')
-  await page.wait_for_selector('[data-atlas-ready="true"]')
-  await page.wait_for_timeout(1800)
+  await page.goto(f'{origin}/orb.html')
+  await page.wait_for_selector('[data-orb-ready="true"]')
+  await page.wait_for_timeout(1200)
   diagnostics=await page.evaluate('atlas.getDiagnostics()')
-  assert diagnostics['frames']>0 and diagnostics['triangles']>0, diagnostics
-  await page.screenshot(path=str(ROOT/'atlas-3d-idle.png'))
-  await page.evaluate("atlas.setState('speaking',true)")
-  await page.wait_for_timeout(400)
-  assert await page.evaluate("atlas.getDiagnostics().mode")=='speaking'
-  await page.screenshot(path=str(ROOT/'atlas-3d-speaking.png'))
-  await page.evaluate('atlas.setPortrait(true)')
-  await page.wait_for_timeout(350)
-  await page.screenshot(path=str(ROOT/'atlas-3d-portrait.png'))
-  await page.evaluate('atlas.setPortrait(false)')
-  await page.evaluate('atlas.wave()')
-  await page.wait_for_timeout(700)
-  await page.screenshot(path=str(ROOT/'atlas-3d-wave.png'))
+  assert diagnostics['frames']>0 and diagnostics['particles']>0, diagnostics
+  for mode in ['idle','thinking','speaking','disconnected','error']:
+   await page.evaluate("mode=>{atlas.setState(mode,true);document.getElementById('status').textContent=mode;}",mode)
+   await page.wait_for_timeout(500)
+   assert await page.evaluate('atlas.getDiagnostics().state')==mode
+   await page.screenshot(path=str(ROOT/f'atlas-orb-{mode}.png'))
   await page.evaluate("atlas.setState('idle',false)")
   before=await page.evaluate('atlas.getDiagnostics().frames')
-  await page.wait_for_timeout(350)
+  await page.wait_for_timeout(300)
   assert before==await page.evaluate('atlas.getDiagnostics().frames')
+  await page.evaluate("atlas.setState('idle',true)")
+  await page.wait_for_timeout(300)
+  assert before<await page.evaluate('atlas.getDiagnostics().frames')
+  await page.emulate_media(reduced_motion='reduce')
+  await page.wait_for_timeout(1200)
+  before=await page.evaluate('atlas.getDiagnostics().orbitTime')
+  await page.wait_for_timeout(300)
+  assert before==await page.evaluate('atlas.getDiagnostics().orbitTime')
+  await page.evaluate("document.getElementById('canvas').dispatchEvent(new Event('contextlost',{cancelable:true}))")
+  assert await page.locator('#fallback:visible').count()==1
+  assert await page.locator('#canvas:visible').count()==0
+  await page.screenshot(path=str(ROOT/'atlas-orb-fallback.png'))
   await page.evaluate('atlas.dispose()')
   assert not errors, errors
-  print('PASS: 3D geometry rendered, speech state, waving, background pause, disposal',diagnostics)
+  print('PASS: particle orb rendering, states, pause/resume, reduced motion, fallback and disposal',diagnostics)
   await browser.close()
  server.shutdown()
 asyncio.run(main())

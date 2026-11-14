@@ -1,0 +1,53 @@
+@implements IAsyncDisposable
+@inject IServiceProvider Services
+<div class="atlas-orb @(Compact ? "compact" : "")" data-presence="@CompanionPresence.Mode(State)">
+    <div class="orb-stage" @ref="stage">
+        <canvas class="orb-canvas" hidden="@(!ready)" @ref="canvas" role="img" aria-label="Atlas: a blue particle sphere with luminous orbital paths"></canvas>
+        <img class="orb-fallback" hidden="@ready" src="_content/Atlas.UI/atlas/orb.svg" alt="Atlas blue energy orb" width="256" height="256" />
+    </div>
+    @if(!Compact){<div class="orb-status" role="status" aria-live="polite"><span class="status-dot" aria-hidden="true"></span>@CompanionPresence.Label(State)</div>}
+    @if(failed && !Compact){<details class="context-help"><summary>Orb display details</summary><p>Animated graphics are unavailable in this view. A lightweight orb is shown instead. Your conversations and supported voice actions still work.</p></details>}
+</div>
+@code {
+    [Parameter] public bool Compact {get;set;}
+    [Parameter] public bool Visible {get;set;} = true;
+    private DotNetObjectReference<AtlasOrb>? reference;
+    private ElementReference canvas,stage;
+    private IJSObjectReference? module,orb;
+    private bool ready,failed,disposed;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if(disposed || failed)return;
+        try
+        {
+            if(firstRender)
+            {
+                var js=Services.GetService(typeof(IJSRuntime)) as IJSRuntime ?? throw new InvalidOperationException();
+                module=await js.InvokeAsync<IJSObjectReference>("import","./_content/Atlas.UI/atlas-orb.js");
+                if(disposed){await module.DisposeAsync();module=null;return;}
+                reference=DotNetObjectReference.Create(this);
+                orb=await module.InvokeAsync<IJSObjectReference>("createAtlasOrb",canvas,stage,reference,Compact);
+                if(disposed){await orb.InvokeVoidAsync("dispose");await orb.DisposeAsync();orb=null;await module.DisposeAsync();module=null;return;}
+                await SyncPresence();ready=true;await InvokeAsync(StateHasChanged);
+            }
+            else await SyncPresence();
+        }
+        catch(JSException){await UseFallback();}
+        catch(InvalidOperationException){await UseFallback();}
+    }
+    private async Task SyncPresence(){if(orb is not null)await orb.InvokeVoidAsync("setState",CompanionPresence.Mode(State),State.IsActive && Visible && !State.DrawerOpen);}
+    [JSInvokable] public Task RendererFailed()=>UseFallback();
+    private async Task UseFallback()
+    {
+        if(disposed)return;failed=true;ready=false;
+        try{if(orb is not null){await orb.InvokeVoidAsync("dispose");await orb.DisposeAsync();orb=null;}}catch(JSException){}catch(InvalidOperationException){}
+        await InvokeAsync(StateHasChanged);
+    }
+    public async ValueTask DisposeAsync()
+    {
+        disposed=true;
+        try{if(orb is not null){await orb.InvokeVoidAsync("dispose");await orb.DisposeAsync();}if(module is not null)await module.DisposeAsync();}
+        catch(JSException){}catch(InvalidOperationException){}
+        reference?.Dispose();
+    }
+}

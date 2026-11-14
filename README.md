@@ -54,7 +54,7 @@ The core Atlas features are implemented. The next phase prioritises reliability 
 | 5 | Accessibility and polish | Validate larger text, TalkBack labels, contrast, touch targets and layouts on small screens. |
 | 6 | Complete the MAUI migration | Clarify which client to use and provide an export/import path for recoverable history stored only in the Kotlin app. |
 | 7 | Automation tools | Extend the current Tools shortcuts into useful actions with previews and confirmation for changes to files or server data. |
-| 8 | Character animation | Improve the live 3D character's resemblance to the approved Atlas mascot, expressions and speech synchronisation. |
+| 8 | Orb presence | Refine the procedural blue particle orb and validate playback-driven animation on devices. |
 
 Recommended order: permanent APK signing, backups and recovery, then real-device testing. Automated builds and smoke tests do not replace testing with the actual server and device.
 
@@ -69,7 +69,7 @@ Recommended order: permanent APK signing, backups and recovery, then real-device
 | Accessibility | Visible focus, inherited control fonts, 44px minimum button height, wrapping toolbars and reduced-motion styles | TalkBack and large-text acceptance on physical devices |
 | Migration | Primary/legacy client guidance and data-preservation checklist | Supported Kotlin export/MAUI import flow |
 | Tools | Memory cleanup preview, revision-checked execution and native confirmation | Additional automation actions and task scheduling |
-| Character | Existing live 3D companion retained | Closer mascot model, expressions and speech synchronisation |
+| Companion | Procedural blue particle orb, depth-aware orbital nodes, lightweight fallback and playback state | Real-device performance and installed voice-engine acceptance |
 
 - [Permanent signing setup](docs/android-release.md)
 - [Workspace backup and recovery](https://github.com/LMS147/Server-management/blob/main/deployment/backup/README.md)

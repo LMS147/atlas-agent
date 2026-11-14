@@ -1,5 +1,5 @@
 /* Shared Atlas visual system. Eight-point spacing, native-safe navigation. */
-:root{color-scheme:dark;--background:#0b1118;--panel:#121d29;--panel-raised:#182635;--line:#2a3948;--accent:#80dccd;--accent-dark:#153a35;--text:#eaf0f7;--muted:#a4b2c3;--danger:#ffb6bd;--space-1:8px;--space-2:16px;--space-3:24px;--space-4:32px;--radius:12px;--nav-height:72px;--nav-inset:calc(var(--nav-height) + env(safe-area-inset-bottom,0px));font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--text);background:var(--background);font-synthesis:none;-webkit-font-smoothing:antialiased}
+:root{color-scheme:dark;--background:#080e18;--panel:#121d29;--panel-raised:#182635;--line:#2a3948;--accent:#66d9ff;--accent-dark:#102e4a;--text:#eaf0f7;--muted:#a4b2c3;--danger:#ffb6bd;--space-1:8px;--space-2:16px;--space-3:24px;--space-4:32px;--radius:12px;--nav-height:72px;--nav-inset:calc(var(--nav-height) + env(safe-area-inset-bottom,0px));font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--text);background:var(--background);font-synthesis:none;-webkit-font-smoothing:antialiased}
 
 *{box-sizing:border-box}
 html,body{margin:0;min-height:100%;background:var(--background)}
@@ -11,8 +11,8 @@ button{display:inline-flex;gap:8px;align-items:center;justify-content:center;min
 button:hover:not(:disabled){background:#243746;border-color:#587184}
 button:active:not(:disabled){background:#304657}
 button:disabled{opacity:.5;cursor:default}
-.primary{background:var(--accent);color:#092822;border-color:var(--accent);font-weight:650}
-.primary:hover:not(:disabled){background:#a3ebdf;border-color:#a3ebdf}
+.primary{background:var(--accent);color:#071c30;border-color:var(--accent);font-weight:650}
+.primary:hover:not(:disabled){background:#9ce8ff;border-color:#9ce8ff}
 .danger{color:var(--danger);background:#2c202a;border-color:#68434d}
 .icon{width:20px;height:20px;flex-shrink:0;vertical-align:middle}
 button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,summary:focus-visible,canvas:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
@@ -37,7 +37,7 @@ small{font-size:13px}
 .brand{display:flex;align-items:center;gap:8px;margin-right:auto;min-width:0}
 .brand strong{font-size:20px;letter-spacing:-.02em}
 .brand small{display:block;font-size:11px;color:var(--muted)}
-.atlas-avatar{object-fit:cover;object-position:50% 30%;border:1px solid var(--line);border-radius:10px;flex-shrink:0}
+.atlas-avatar{object-fit:contain;object-position:center;border:1px solid var(--line);border-radius:10px;flex-shrink:0}
 .brand-avatar{height:36px;width:36px}
 .header-menu{width:48px;flex-shrink:0;padding:8px;border:0;background:transparent}
 .connection-status{display:inline-flex;align-items:center;gap:8px;max-width:42%;padding:4px 8px;border:1px solid var(--line);border-radius:8px;font-size:12px;color:var(--muted)}
@@ -68,7 +68,7 @@ label textarea,label select{margin-top:8px}
 .input-action{position:absolute;right:0;top:0;bottom:0;width:48px;padding:8px;background:transparent;border:0}
 .setup{max-width:600px;padding-top:24px}
 .setup-intro{display:flow-root;margin-bottom:24px}
-.setup-mascot{float:right;width:72px;height:104px;object-fit:contain;margin:0 0 8px 16px}
+.setup-orb{float:right;width:88px;height:88px;object-fit:contain;margin:0 0 8px 16px}
 .setup h1{font-size:28px;margin:8px 0}
 .setup-description{color:var(--muted);margin-bottom:8px}
 .meet-atlas{min-height:44px;background:transparent;border-color:transparent;padding:8px 0;color:var(--accent)}
@@ -88,7 +88,7 @@ details p{font-size:14px}
 .error{color:var(--danger)}
 .alert.error{background:#2c202a;border-color:#68434d}
 .notice{color:var(--accent)}
-.alert.notice{border-color:#39665d;background:#142e29}
+.alert.notice{border-color:#2c5276;background:#102b40}
 .loading{padding:8px 24px;background:var(--accent-dark);color:var(--accent);font-size:13px}
 .context-notice{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border:1px solid var(--line);border-radius:10px;background:var(--panel);font-size:14px}
 .context-notice>.icon{margin-top:3px;color:var(--accent)}
@@ -101,7 +101,7 @@ details p{font-size:14px}
 .message{max-width:90%;align-self:flex-start;min-width:0}
 .message.user{align-self:flex-end}
 .bubble{border:1px solid var(--line);padding:12px 16px;background:var(--panel);border-radius:12px 12px 12px 4px}
-.user .bubble{background:#173a35;border-color:#345e54;border-radius:12px 12px 4px 12px}
+.user .bubble{background:#152e49;border-color:#2d557a;border-radius:12px 12px 4px 12px}
 .bubble small{display:block;color:var(--accent);font-size:12px;font-weight:650;margin-bottom:8px}
 .bubble p{font-size:15px;margin:0;white-space:pre-wrap}
 .message-avatar{width:28px;height:28px;border-radius:8px;float:left;margin:0 8px 8px 0}
@@ -119,7 +119,7 @@ details p{font-size:14px}
 .empty-state h2{color:var(--text)}
 .empty-state p{max-width:480px;margin:8px auto}
 .chat-welcome{width:100%;max-width:600px;margin:auto;padding:8px 0 16px}
-.welcome-portrait{width:72px;height:104px;object-fit:contain}
+
 .chat-welcome>.eyebrow{display:none}
 .chat-welcome h2{font-size:25px;color:var(--text);margin:8px 0}
 .chat-welcome p{font-size:14px;margin-bottom:16px}
@@ -173,17 +173,21 @@ details p{font-size:14px}
 .companion-page{text-align:center;max-width:680px}
 .companion-page h1{margin-bottom:8px}
 .companion-page>.muted{margin-bottom:16px}
-.atlas-character{max-width:480px;margin:16px auto;text-align:center}
-.atlas-stage{position:relative;height:clamp(240px,40dvh,360px);width:100%;border:1px solid var(--line);border-radius:var(--radius);background:#0e1823;overflow:hidden}
-.atlas-stage canvas{width:100%;height:100%;display:block;touch-action:pan-y;cursor:grab}
-.atlas-stage canvas:active{cursor:grabbing}
-.character-fallback{position:absolute;inset:12px;width:calc(100% - 24px);height:calc(100% - 24px);object-fit:contain;pointer-events:none}
-.character-state{display:flex;align-items:center;justify-content:center;gap:8px;color:var(--muted);font-size:13px;margin:8px 0}
-.character-controls,.companion-actions{display:flex;justify-content:center;flex-wrap:wrap;gap:8px}
+.atlas-orb{max-width:480px;margin:16px auto;text-align:center;min-width:0}
+.orb-stage{position:relative;isolation:isolate;width:100%;height:clamp(240px,42dvh,380px);overflow:hidden;border:1px solid #23384e;border-radius:12px;background:#060c16}
+.orb-canvas{display:block;width:100%;height:100%;pointer-events:none}
+.orb-fallback{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none}
+.orb-status{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;color:var(--text);font-size:15px}
+.orb-status .status-dot{color:#37cfff}
+.atlas-orb[data-presence=disconnected] .orb-fallback{opacity:.4}
+.atlas-orb[data-presence=error] .orb-status{color:var(--danger)}
+.atlas-orb.compact{width:152px;max-width:100%;margin:0 auto 8px}
+.compact .orb-stage{height:152px;border:0;background:#060c16;border-radius:50%}
+.atlas-orb .context-help{text-align:left}
+.companion-page h1{font-size:30px}
+.companion-actions{display:flex;justify-content:center;flex-wrap:wrap;gap:8px}
 .companion-note{max-width:520px;margin:16px auto 0;font-size:13px}
-.compact .atlas-stage{height:160px}
-.companion-dialog .atlas-stage{height:280px}
-.atlas-character .context-help{text-align:left}
+.companion-dialog .orb-stage{height:280px}
 .profile-page{max-width:800px}
 .profile-page .page-heading p{margin-bottom:0;font-size:14px}
 .profile-document{font-size:16px;line-height:1.7}
@@ -231,7 +235,7 @@ details p{font-size:14px}
 @media(min-width:1000px){.page{padding-top:32px}
 .setup{max-width:900px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);align-items:start;gap:32px}
 .setup-intro{padding-top:24px}
-.setup-mascot{float:none;height:144px;width:104px;margin-bottom:16px}
+.setup-orb{float:none;height:144px;width:104px;margin-bottom:16px}
 .app-header{padding-left:32px;padding-right:32px}
 }
 
@@ -267,14 +271,14 @@ details p{font-size:14px}
 .starter-grid{grid-template-columns:1fr}
 .starter-grid button{min-height:56px}
 .starter-grid span{display:none}
-.setup-mascot{height:88px;width:56px}
+.setup-orb{height:88px;width:56px}
 .setup h1{font-size:26px}
 }
 
 @media(max-height:550px){.composer-note,.timestamp-option{display:none}
 .chat-page .eyebrow{display:none}
 .chat-history-actions{margin:4px 0}
-.chat-welcome .welcome-portrait{height:56px}
+.chat-welcome .atlas-orb.compact{width:96px}.chat-welcome .compact .orb-stage{height:96px}
 .chat-welcome{padding-top:0}
 .chat-welcome p{margin:4px 0 8px}
 }

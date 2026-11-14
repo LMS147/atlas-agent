@@ -36,8 +36,12 @@ await renderer.Dispatcher.InvokeAsync(()=>state.NavigateAsync("Profile"));await 
 await renderer.Dispatcher.InvokeAsync(()=>state.NavigateAsync("Settings"));await Save("settings");
 await renderer.Dispatcher.InvokeAsync(()=>state.SetDrawer(true));await Save("drawer");
 await renderer.Dispatcher.InvokeAsync(()=>state.SetDrawer(false));
-await File.WriteAllTextAsync(Path.Combine(output,"3d.html"),"""
-<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="atlas.css"></head><body><div class="atlas-character"><div id="stage" class="atlas-stage"><canvas id="canvas"></canvas></div></div><script type="module">import {buildAtlas} from './_content/Atlas.UI/atlas-3d.js';window.atlas=buildAtlas(document.getElementById('canvas'),document.getElementById('stage'));</script></body></html>
+await File.WriteAllTextAsync(Path.Combine(output,"orb.html"),"""
+<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="atlas.css"></head><body><section class="page companion-page"><h1>Atlas</h1><p class="muted">Your AI companion.</p><div class="atlas-orb"><div id="stage" class="orb-stage"><canvas id="canvas" class="orb-canvas" aria-label="Atlas blue energy orb"></canvas><img id="fallback" class="orb-fallback" hidden src="_content/Atlas.UI/atlas/orb.svg" alt="Atlas blue energy orb"></div><div class="orb-status" id="status">Ready</div></div></section><script type="module">
+import {buildAtlasOrb} from './_content/Atlas.UI/atlas-orb.js';
+const fallback=()=>{document.getElementById('canvas').hidden=true;document.getElementById('fallback').hidden=false;document.getElementById('stage').dataset.orbReady='fallback';};
+try{window.atlas=buildAtlasOrb(document.getElementById('canvas'),document.getElementById('stage'),{onFailure:fallback});}catch{fallback();}
+</script></body></html>
 """);
 sealed class Mock:HttpMessageHandler
 {

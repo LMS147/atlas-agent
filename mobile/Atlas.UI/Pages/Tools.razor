@@ -16,5 +16,5 @@
         if(await State.Run(()=>State.Repo.CompactAsync(revision))){plan=null;State.Success("Memory cleanup completed.");}
         else plan=null;
     }
-    private readonly (string Page,string Icon,string Title,string Description)[] tools=[("Files","files","File manager","Open, upload, and edit workspace files"),("Memory","memory","Memory manager","Manage what Atlas remembers"),("Atlas","spark","Atlas companion","Open your live 3D companion")];
+    private readonly (string Page,string Icon,string Title,string Description)[] tools=[("Files","files","File manager","Open, upload, and edit workspace files"),("Memory","memory","Memory manager","Manage what Atlas remembers"),("Atlas","spark","Atlas companion","Open your animated AI companion")];
 }
