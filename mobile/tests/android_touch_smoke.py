@@ -9,6 +9,7 @@ import time
 import urllib.request
 import xml.etree.ElementTree as ET
 import websocket
+from android_smoke_diagnostics import collect_diagnostics
 
 OUT = pathlib.Path('android-smoke-results')
 OUT.mkdir(exist_ok=True)
@@ -16,7 +17,16 @@ PACKAGE = 'com.atlas.ai.hybrid'
 
 
 def adb(*args):
-    return subprocess.check_output(['adb', *args], text=True).strip()
+    return subprocess.check_output(['adb', *args], text=True, timeout=20, stderr=subprocess.STDOUT).strip()
+
+
+class DeviceDisconnected(RuntimeError):
+    pass
+
+
+def checkpoint(name):
+    print(f'CHECKPOINT: {name}', flush=True)
+    (OUT/'checkpoint.txt').write_text(name, encoding='utf-8')
 
 
 def until(action, seconds=45):
@@ -27,6 +37,8 @@ def until(action, seconds=45):
             result = action()
             if result:
                 return result
+        except DeviceDisconnected:
+            raise
         except Exception as error:
             last = error
         time.sleep(.5)
@@ -41,14 +53,20 @@ class CDP:
         self.call('Runtime.enable')
 
     def call(self, method, params=None):
-        self.sequence += 1
-        self.socket.send(json.dumps(dict(id=self.sequence, method=method, params=params or {})))
-        while True:
-            message = json.loads(self.socket.recv())
-            if message.get('id') == self.sequence:
-                assert 'error' not in message, message
-                return message.get('result', {})
-            self.events.append(message)
+        try:
+            self.sequence += 1
+            self.socket.send(json.dumps(dict(id=self.sequence, method=method, params=params or {})))
+            while True:
+                raw = self.socket.recv()
+                if not raw:
+                    raise DeviceDisconnected('Android WebView disconnected; see live-logcat and host diagnostics.')
+                message = json.loads(raw)
+                if message.get('id') == self.sequence:
+                    assert 'error' not in message, message
+                    return message.get('result', {})
+                self.events.append(message)
+        except (websocket.WebSocketConnectionClosedException, ConnectionError, OSError) as error:
+            raise DeviceDisconnected('Android WebView connection was lost; see live-logcat and host diagnostics.') from error
 
     def evaluate(self, expression):
         result = self.call('Runtime.evaluate', dict(expression=expression, returnByValue=True))
@@ -57,8 +75,13 @@ class CDP:
 
 
 cdp = None
+live_logcat = None
+live_output = None
 try:
     adb('logcat', '-c')
+    live_output = (OUT/'live-logcat.txt').open('wb')
+    live_logcat = subprocess.Popen(['adb', 'logcat', '-v', 'threadtime'], stdout=live_output, stderr=subprocess.STDOUT)
+    checkpoint('Launching installed Atlas APK')
     adb('shell', 'monkey', '-p', PACKAGE, '-c', 'android.intent.category.LAUNCHER', '1')
     pid = until(lambda: adb('shell', 'pidof', PACKAGE))
     adb('forward', 'tcp:9222', f'localabstract:webview_devtools_remote_{pid}')
@@ -77,14 +100,39 @@ try:
         left, top, _, _ = map(int, re.findall(r'\d+', view.attrib['bounds']))
         return left, top
     left, top = until(webview_origin, 60)
+    checkpoint('Setup ready; opening orb preview')
+    (OUT/'before-orb.html').write_text(str(cdp.evaluate('document.documentElement.outerHTML')), encoding='utf-8')
     # Exercise the bundled particle orb through Blazor before any server login.
-    cdp.evaluate("window.orbFrames=0;const nativeRAF=window.requestAnimationFrame.bind(window);window.requestAnimationFrame=cb=>nativeRAF(t=>{window.orbFrames++;cb(t)});")
+    cdp.evaluate("""(()=>{
+        window.orbFrames=0;window.orbErrors=[];
+        const nativeRAF=window.requestAnimationFrame.bind(window);
+        window.requestAnimationFrame=cb=>nativeRAF(t=>{window.orbFrames++;cb(t)});
+        const create=DotNet.createJSObjectReference;
+        DotNet.createJSObjectReference=function(value){
+            if(value && typeof value.getDiagnostics==='function' && typeof value.setState==='function'){
+                window.readOrbDiagnostics=()=>value.getDiagnostics();
+                const setState=value.setState;
+                value.setState=function(...args){try{return setState.apply(this,args);}catch(error){window.orbErrors.push(String(error));throw error;}};
+            }
+            return create.call(this,value);
+        };
+        for(const name of ['drawImage','fillRect','arc','stroke','setTransform']){
+            const original=CanvasRenderingContext2D.prototype[name];
+            CanvasRenderingContext2D.prototype[name]=function(...args){try{return original.apply(this,args);}catch(error){window.orbErrors.push(name+': '+String(error));throw error;}};
+        }
+    })()""")
     cdp.evaluate("document.querySelector('.meet-atlas').click()")
-    until(lambda: cdp.evaluate("!!document.querySelector('[data-orb-ready=\"true\"]') || document.body.innerText.includes(\"Orb display details\")"), 45)
-    print('Atlas native particle orb ready:', cdp.evaluate("!!document.querySelector('[data-orb-ready=\"true\"]')"))
-    animated=cdp.evaluate("!!document.querySelector('[data-orb-ready=\"true\"]')")
+    until(lambda: cdp.evaluate("!!document.querySelector('.companion-dialog')"))
+    checkpoint('Orb preview opened; waiting for renderer or fallback')
+    until(lambda: cdp.evaluate("!!document.querySelector('[data-orb-ready=\"true\"] canvas:not([hidden])') || document.body.innerText.includes(\"Orb display details\")"), 45)
+    print('Atlas native particle orb ready:', cdp.evaluate("!!document.querySelector('[data-orb-ready=\"true\"] canvas:not([hidden])')"))
+    animated=cdp.evaluate("!!document.querySelector('[data-orb-ready=\"true\"] canvas:not([hidden])')")
+    checkpoint('Orb renderer ready' if animated else 'Orb fallback ready')
     if animated:
-        until(lambda: cdp.evaluate('window.orbFrames>2'))
+        until(lambda: cdp.evaluate('window.orbFrames>2 || !!document.querySelector(\".orb-fallback:not([hidden])\")'))
+        animated=cdp.evaluate('!document.querySelector(\".orb-canvas\").hidden')
+    if animated:
+        checkpoint('Checking orb background pause')
         adb('shell', 'input', 'keyevent', '3')
         time.sleep(1)
         paused=cdp.evaluate('window.orbFrames')
@@ -92,6 +140,9 @@ try:
         assert paused==cdp.evaluate('window.orbFrames'), 'Orb kept rendering in background'
         adb('shell', 'monkey', '-p', PACKAGE, '-c', 'android.intent.category.LAUNCHER', '1')
         until(lambda: cdp.evaluate(f'window.orbFrames>{paused}'))
+    else:
+        assert cdp.evaluate("document.querySelectorAll('.orb-fallback:not([hidden])').length===1 && document.querySelector('.orb-canvas').hidden"), 'Expected one orb fallback and no overlapping canvas'
+        print('PASS: matching static orb fallback; animation lifecycle not exercised on this emulator', flush=True)
     cdp.evaluate("document.querySelector('[aria-label=\"Close Atlas preview\"]').click()")
     until(lambda: cdp.evaluate("!document.querySelector('.companion-dialog')"))
 
@@ -103,6 +154,7 @@ try:
         adb('shell', 'input', 'tap', str(round(left+x)), str(round(top+y)))
         time.sleep(.3)
 
+    checkpoint('Orb preview closed; checking native input and connection recovery')
     tap('#server')
     adb('shell', 'input', 'keyevent', '123')
     adb('shell', 'input', 'keyevent', *(['67'] * 100))
@@ -130,11 +182,24 @@ try:
     until(lambda: cdp.evaluate("document.querySelector('input[type=checkbox]').checked") != before, 10)
     print('PASS: native text input, Connect callback/error recovery, and checkbox touch')
 finally:
-    if cdp:
-        (OUT/'webview-events.json').write_text(json.dumps(cdp.events, indent=2))
-        (OUT/'page.txt').write_text(str(cdp.evaluate('document.body.innerText')))
-        (OUT/'page.html').write_text(str(cdp.evaluate('document.documentElement.outerHTML')))
-        (OUT/'input-state.json').write_text(json.dumps(cdp.evaluate("({focus:document.activeElement.id,tokenLength:document.querySelector('#token')?.value.length,server:document.querySelector('#server')?.value})")))
-    (OUT/'logcat.txt').write_text(adb('logcat', '-d'))
-    with (OUT/'screen.png').open('wb') as screenshot:
-        subprocess.run(['adb', 'exec-out', 'screencap', '-p'], stdout=screenshot, check=False)
+    if live_logcat is not None:
+        try:
+            live_logcat.terminate()
+            try:
+                live_logcat.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                live_logcat.kill()
+                live_logcat.wait(timeout=5)
+        except Exception:
+            pass
+    if live_output is not None:
+        try:
+            live_output.close()
+        except Exception:
+            pass
+    collect_diagnostics(OUT, cdp)
+    if cdp is not None:
+        try:
+            cdp.socket.close()
+        except Exception:
+            pass

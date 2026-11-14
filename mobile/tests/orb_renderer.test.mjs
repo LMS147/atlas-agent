@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 const source=await readFile(new URL('../Atlas.UI/wwwroot/atlas-orb.js',import.meta.url),'utf8');
-const {buildAtlasOrb}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+const {buildAtlasOrb,createAtlasOrb}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
 function fixture({reduced=false,quality,compact=false,cost=0}={}) {
     let next=0,now=0,draws=0;const frames=new Map(),events=new Map(),canvasEvents=new Map();let resize,intersection,motion;
     const context={setTransform(){},createRadialGradient:()=>({addColorStop(){}}),fillRect(){draws++;},drawImage(){draws++;},beginPath(){},arc(){},fill(){},stroke(){},moveTo(){},lineTo(){}};
@@ -19,7 +19,7 @@ function fixture({reduced=false,quality,compact=false,cost=0}={}) {
     const stage={dataset:{},getBoundingClientRect:()=>({width:360,height:320})};
     let failures=0;const orb=buildAtlasOrb(canvas,stage,{host,quality,compact,onFailure:()=>failures++});
     function advance(seconds=1,fps=60){for(let i=0;i<seconds*fps;i++){now+=1000/fps;const batch=[...frames.values()];frames.clear();batch.forEach(f=>f(now));assert.ok(frames.size<=1,'only one animation callback');}}
-    return {orb,canvas,stage,media,frames,events,canvasEvents,advance,document,get failures(){return failures;},get draws(){return draws;},hide(value){intersection([{isIntersecting:!value}]);},motion:()=>motion?.()};
+    return {orb,canvas,stage,media,frames,events,canvasEvents,advance,document,host,get failures(){return failures;},get draws(){return draws;},hide(value){intersection([{isIntersecting:!value}]);},motion:()=>motion?.()};
 }
 
 test('time-based orbit speed is similar across frame rates and remains three-dimensional',()=>{
@@ -61,4 +61,20 @@ test('canvas loss reports once and stops rendering for the matching static fallb
 });
 test('an unavailable Canvas fails before allocating observers or animation loops',()=>{
     assert.throws(()=>buildAtlasOrb({getContext:()=>null},{},{}),/Canvas unavailable/);
+});
+
+test('Blazor factory returns callable renderer methods, not a second reference handle',()=>{
+    const f=fixture();f.orb.dispose();
+    const values={...f.host,DotNet:{createJSObjectReference(){throw new Error('Do not double-wrap a Blazor return value');}}};
+    const saved=new Map(Object.keys(values).map(key=>[key,Object.getOwnPropertyDescriptor(globalThis,key)]));
+    let renderer;
+    try{
+        for(const [key,value] of Object.entries(values))Object.defineProperty(globalThis,key,{configurable:true,writable:true,value});
+        renderer=createAtlasOrb(f.canvas,f.stage,{invokeMethodAsync:()=>Promise.resolve()},false);
+        assert.equal(typeof renderer.setState,'function');assert.equal(typeof renderer.dispose,'function');
+        renderer.setState('thinking',false);assert.equal(renderer.getDiagnostics().state,'thinking');
+    }finally{
+        renderer?.dispose();
+        for(const [key,descriptor] of saved){if(descriptor)Object.defineProperty(globalThis,key,descriptor);else delete globalThis[key];}
+    }
 });

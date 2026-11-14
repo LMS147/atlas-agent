@@ -44,5 +44,5 @@ export function observeLayout() {
     document.addEventListener('input',input);
     viewport?.addEventListener('resize',update);viewport?.addEventListener('scroll',update);
     window.addEventListener('resize',update);update();
-    return DotNet.createJSObjectReference({dispose(){mutation.disconnect();navObserver?.disconnect();document.removeEventListener('input',input);viewport?.removeEventListener('resize',update);viewport?.removeEventListener('scroll',update);window.removeEventListener('resize',update);root.style.removeProperty('--nav-inset');root.style.removeProperty('--keyboard-offset');}});
+    return {dispose(){mutation.disconnect();navObserver?.disconnect();document.removeEventListener('input',input);viewport?.removeEventListener('resize',update);viewport?.removeEventListener('scroll',update);window.removeEventListener('resize',update);root.style.removeProperty('--nav-inset');root.style.removeProperty('--keyboard-offset');}};
 }
