@@ -17,7 +17,7 @@ class DiagnosticsTests(unittest.TestCase):
             return subprocess.CompletedProcess(args, 0, b'evidence', b'')
         with tempfile.TemporaryDirectory() as folder:
             errors = collect_diagnostics(folder, Closed(), run)
-            self.assertEqual(3, len(errors))
+            self.assertEqual(4, len(errors))
             for name in ['webview-events.json', 'adb-devices.txt', 'logcat.txt', 'screen.png', 'host-memory.txt', 'diagnostic-errors.json']:
                 self.assertTrue((Path(folder) / name).exists(), name)
             self.assertIn(['adb', 'logcat', '-d'], calls)

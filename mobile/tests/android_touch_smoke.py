@@ -103,16 +103,35 @@ try:
     checkpoint('Setup ready; opening orb preview')
     (OUT/'before-orb.html').write_text(str(cdp.evaluate('document.documentElement.outerHTML')), encoding='utf-8')
     # Exercise the bundled particle orb through Blazor before any server login.
-    cdp.evaluate("window.orbFrames=0;const nativeRAF=window.requestAnimationFrame.bind(window);window.requestAnimationFrame=cb=>nativeRAF(t=>{window.orbFrames++;cb(t)});")
+    cdp.evaluate("""(()=>{
+        window.orbFrames=0;window.orbErrors=[];
+        const nativeRAF=window.requestAnimationFrame.bind(window);
+        window.requestAnimationFrame=cb=>nativeRAF(t=>{window.orbFrames++;cb(t)});
+        const create=DotNet.createJSObjectReference;
+        DotNet.createJSObjectReference=function(value){
+            if(value && typeof value.getDiagnostics==='function' && typeof value.setState==='function'){
+                window.readOrbDiagnostics=()=>value.getDiagnostics();
+                const setState=value.setState;
+                value.setState=function(...args){try{return setState.apply(this,args);}catch(error){window.orbErrors.push(String(error));throw error;}};
+            }
+            return create.call(this,value);
+        };
+        for(const name of ['drawImage','fillRect','arc','stroke','setTransform']){
+            const original=CanvasRenderingContext2D.prototype[name];
+            CanvasRenderingContext2D.prototype[name]=function(...args){try{return original.apply(this,args);}catch(error){window.orbErrors.push(name+': '+String(error));throw error;}};
+        }
+    })()""")
     cdp.evaluate("document.querySelector('.meet-atlas').click()")
     until(lambda: cdp.evaluate("!!document.querySelector('.companion-dialog')"))
     checkpoint('Orb preview opened; waiting for renderer or fallback')
-    until(lambda: cdp.evaluate("!!document.querySelector('[data-orb-ready=\"true\"]') || document.body.innerText.includes(\"Orb display details\")"), 45)
-    print('Atlas native particle orb ready:', cdp.evaluate("!!document.querySelector('[data-orb-ready=\"true\"]')"))
-    animated=cdp.evaluate("!!document.querySelector('[data-orb-ready=\"true\"]')")
+    until(lambda: cdp.evaluate("!!document.querySelector('[data-orb-ready=\"true\"] canvas:not([hidden])') || document.body.innerText.includes(\"Orb display details\")"), 45)
+    print('Atlas native particle orb ready:', cdp.evaluate("!!document.querySelector('[data-orb-ready=\"true\"] canvas:not([hidden])')"))
+    animated=cdp.evaluate("!!document.querySelector('[data-orb-ready=\"true\"] canvas:not([hidden])')")
     checkpoint('Orb renderer ready' if animated else 'Orb fallback ready')
     if animated:
-        until(lambda: cdp.evaluate('window.orbFrames>2'))
+        until(lambda: cdp.evaluate('window.orbFrames>2 || !!document.querySelector(\".orb-fallback:not([hidden])\")'))
+        animated=cdp.evaluate('!document.querySelector(\".orb-canvas\").hidden')
+    if animated:
         checkpoint('Checking orb background pause')
         adb('shell', 'input', 'keyevent', '3')
         time.sleep(1)
@@ -121,6 +140,9 @@ try:
         assert paused==cdp.evaluate('window.orbFrames'), 'Orb kept rendering in background'
         adb('shell', 'monkey', '-p', PACKAGE, '-c', 'android.intent.category.LAUNCHER', '1')
         until(lambda: cdp.evaluate(f'window.orbFrames>{paused}'))
+    else:
+        assert cdp.evaluate("document.querySelectorAll('.orb-fallback:not([hidden])').length===1 && document.querySelector('.orb-canvas').hidden"), 'Expected one orb fallback and no overlapping canvas'
+        print('PASS: matching static orb fallback; animation lifecycle not exercised on this emulator', flush=True)
     cdp.evaluate("document.querySelector('[aria-label=\"Close Atlas preview\"]').click()")
     until(lambda: cdp.evaluate("!document.querySelector('.companion-dialog')"))
 

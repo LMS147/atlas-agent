@@ -45,6 +45,7 @@ jobs:
           emulator-options: -no-window -gpu lavapipe -feature -Vulkan -no-snapshot -noaudio -no-boot-anim -no-metrics
           pre-emulator-launch-script: adb start-server
           script: |
+            python -m unittest discover -s mobile/tests -p "test_android_smoke_diagnostics.py"
             adb install -r $(find apk -name '*-Signed.apk' -print -quit)
             python mobile/tests/android_touch_smoke.py
       - uses: actions/upload-artifact@v4
