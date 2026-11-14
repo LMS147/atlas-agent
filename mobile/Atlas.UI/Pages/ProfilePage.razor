@@ -1,4 +1,4 @@
-<section class="page"><span class="eyebrow">AGENT IDENTITY</span><h1>@(profile?.Name??"Atlas")</h1><p class="muted">Read-only agent profile from your server.</p><button disabled="@State.Busy" @onclick="Refresh">Refresh</button><article class="card"><pre class="document">@profile?.Content</pre></article></section>
+<section class="page profile-page"><div class="page-heading"><div><span class="eyebrow">AGENT IDENTITY</span><h1>@(profile?.Name??"Atlas")</h1><p class="muted">Read-only agent profile from your server.</p></div><button disabled="@State.Busy" @onclick="Refresh">Refresh</button></div>@if(profile is not null){<article class="card profile-document">@((MarkupString)ProfileMarkdown.Render(profile.Content))</article>}else if(State.Busy){<p role="status">Loading agent profile…</p>}</section>
 @code {
     private Profile? profile;
     protected override Task OnInitializedAsync()=>Refresh();

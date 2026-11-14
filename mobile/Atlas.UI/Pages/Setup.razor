@@ -1,28 +1,29 @@
 <section class="setup page">
     <div class="setup-intro">
-        <span class="eyebrow"><span class="tiny-line"></span> YOUR PERSONAL AI WORKSPACE</span>
-        <img class="setup-mascot" src="_content/Atlas.UI/atlas/mascot.webp" alt="Atlas, your cyan-eyed hooded AI companion" width="180" height="270" />
-        <h1>A little more clarity.<br /><span class="accent-text">A lot more possibility.</span></h1>
-        <p class="setup-description">A place to think, create, and get things done. Connect your Atlas server to make it yours.</p>
-        <button class="meet-atlas" @onclick="()=>showCompanion=true"><AtlasIcon Name="profile" /> Meet Atlas in 3D</button>
-        <div class="setup-benefits"><span><AtlasIcon Name="chat" /> Conversations that continue</span><span><AtlasIcon Name="memory" /> Context that stays with you</span><span><AtlasIcon Name="lock" /> A workspace you control</span></div>
+        <img class="setup-mascot" src="_content/Atlas.UI/atlas/mascot.webp" alt="Atlas, your AI companion" width="80" height="112" />
+        <span class="eyebrow">YOUR PERSONAL AI WORKSPACE</span>
+        <h1>Welcome to Atlas</h1>
+        <p class="setup-description">A familiar place for your conversations, ideas, and memories.</p>
+        <button class="meet-atlas" @onclick="()=>showCompanion=true"><AtlasIcon Name="profile" /> Meet Atlas</button>
     </div>
     <div class="setup-panel">
         <div class="card connection-card">
             <div class="card-heading"><span class="section-icon"><AtlasIcon Name="server" /></span><div><h2>Connect to Atlas</h2><p class="muted">One connection. Your whole workspace.</p></div></div>
             <div class="form-grid">
-                <div class="field-group"><label for="server">Server address</label><div class="input-wrap"><AtlasIcon Name="server" /><input id="server" type="url" @bind="State.ServerUrl" @bind:event="oninput" disabled="@State.Busy" autocapitalize="none" spellcheck="false" placeholder="https://your-atlas-server.com" /></div><small class="field-hint">Use the HTTPS address of your Atlas server.</small></div>
-                <div class="field-group"><label for="token">Access token</label><div class="input-wrap"><AtlasIcon Name="lock" /><input id="token" type="@(showToken ? "text" : "password")" @bind="token" @bind:event="oninput" disabled="@State.Busy" autocomplete="off" placeholder="Enter your Atlas token" /><button class="input-action" type="button" disabled="@State.Busy" @onclick="()=>showToken=!showToken" aria-label="@(showToken ? "Hide access token" : "Show access token")" aria-pressed="@showToken"><AtlasIcon Name="eye" /></button></div></div>
+                <div class="field-group"><label for="server">Server address</label><div class="input-wrap"><AtlasIcon Name="server" /><input id="server" aria-describedby="connection-validation" type="url" @bind="State.ServerUrl" @bind:event="oninput" disabled="@State.Busy" autocapitalize="none" spellcheck="false" placeholder="https://your-atlas-server.com" /></div><small class="field-hint">Use HTTPS without credentials, query parameters, or fragments.</small></div>
+                <div class="field-group"><label for="token">Access token</label><div class="input-wrap"><AtlasIcon Name="lock" /><input id="token" aria-describedby="connection-validation" type="@(showToken ? "text" : "password")" @bind="token" @bind:event="oninput" disabled="@State.Busy" autocomplete="off" placeholder="Enter your Atlas token" /><button class="input-action" type="button" disabled="@State.Busy" @onclick="()=>showToken=!showToken" aria-label="@(showToken ? "Hide access token" : "Show access token")" aria-pressed="@showToken"><AtlasIcon Name="eye" /></button></div></div>
                 <label class="check remember"><input type="checkbox" @bind="remember" disabled="@State.Busy" /> Remember this connection</label>
-                <button class="primary connect-button" disabled="@(State.Busy || string.IsNullOrWhiteSpace(token))" @onclick="Connect"><span>@(State.Busy ? "Connecting…" : "Open my workspace")</span><AtlasIcon Name="arrow" /></button>
+                <button class="primary connect-button" disabled="@(State.Busy || !CanConnect)" @onclick="Connect"><span>@(State.Busy ? "Connecting…" : "Connect to Atlas")</span><AtlasIcon Name="arrow" /></button>
+                <small id="connection-validation" class="field-hint" role="status">@(State.Busy ? "Checking your server and access token…" : CanConnect ? "Ready to connect securely." : "Enter an HTTPS server address and a token of at least 32 characters without spaces.")</small>
             </div>
-            <details class="connection-help"><summary>Where do I find my access token?</summary><p>Use the <code>ATLAS_API_TOKEN</code> configured on your Atlas server. This is separate from your Groq API key.</p></details>
+            <details class="connection-help"><summary>Connection setup help</summary><p>Use the <code>ATLAS_API_TOKEN</code> configured on your Atlas server. This is separate from your Groq API key.</p></details>
         </div>
         <p class="security-note"><AtlasIcon Name="lock" /><span>Saved credentials are protected by your device's secure storage.</span></p>
     </div>
 </section>
 @if(showCompanion){<div class="dialog-backdrop"><section class="dialog companion-dialog" role="dialog" aria-modal="true" aria-label="Meet Atlas"><div class="page-heading"><h2>Meet Atlas</h2><button aria-label="Close Atlas preview" @onclick="CloseCompanion">Close</button></div><AtlasCharacter /><div class="companion-actions"><button disabled="@(!State.SpeechAvailable || State.Speaking || !State.IsActive)" @onclick="Hello">Say hello</button>@if(State.Speaking){<button @onclick="State.StopSpeaking">Stop voice</button>}</div><p class="companion-note muted">Drag to turn him. Voice plays only when you ask.</p></section></div>}
 @code {
+    private bool CanConnect { get { try { AtlasApi.Normalize(State.ServerUrl); var value=token.Trim();return value.Length>=32 && value.All(c=>c>=33 && c<=126); } catch(ArgumentException){return false;} } }
     private string token="";private bool remember=true,showToken,showCompanion;
     private void CloseCompanion(){State.StopSpeaking();showCompanion=false;}
     private Task Hello()=>State.SpeakAsync("Hello. I am Atlas, your personal AI companion. Let us turn your ideas into something real.");

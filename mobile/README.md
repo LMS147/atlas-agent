@@ -67,3 +67,7 @@ With an updated backend advertising `streaming_chat: true` in authenticated heal
 See [streaming protocol and deployment](../docs/chat-streaming.md).
 
 Host monitoring and service recovery are provided by the separate Server-management app. Atlas keeps AI chat, conversations, memory, workspace files, tools and the companion.
+
+## Atlas UI 0.11.0
+
+The personal AI app uses a compact navy and mint visual system across connection, chat, memory, companion, files, maintenance, and agent profile screens. See [UI changes and verification](../docs/atlas-ui.md) for the changed files, preserved workflows, visual CI coverage, and device checks still required.

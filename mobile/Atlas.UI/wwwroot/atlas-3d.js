@@ -2,10 +2,10 @@ import * as T from './vendor/three/three.module.min.js';
 
 // A small, articulated 3D interpretation of the approved Atlas character.
 // It is built from original geometry, not a flat image rotated in a canvas.
-export function createAtlas(canvas, container) {
-    return DotNet.createJSObjectReference(buildAtlas(canvas, container));
+export function createAtlas(canvas, container, receiver) {
+    return DotNet.createJSObjectReference(buildAtlas(canvas, container, () => receiver.invokeMethodAsync("RendererLost").catch(() => {})));
 }
-export function buildAtlas(canvas, container) {
+export function buildAtlas(canvas, container, onLost = null) {
     let renderer;
     try {
     renderer = new T.WebGLRenderer({canvas, alpha:true, antialias:true, powerPreference:'low-power'});
@@ -105,7 +105,7 @@ export function buildAtlas(canvas, container) {
     const keydown=e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();targetYaw=T.MathUtils.clamp(targetYaw+(e.key==='ArrowLeft'?-.15:.15),-1.1,1.1);}};
     canvas.addEventListener('pointerdown',down);canvas.addEventListener('pointermove',move);canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);canvas.addEventListener('keydown',keydown);
     let lost=false;
-    const contextLost=e=>{e.preventDefault();lost=true;container.classList.add('webgl-lost');};
+    const contextLost=e=>{e.preventDefault();lost=true;container.classList.add('webgl-lost');onLost?.();};
     canvas.addEventListener('webglcontextlost',contextLost);
     const intersection=new IntersectionObserver(entries=>{visible=entries[0]?.isIntersecting??true;});intersection.observe(container);
     renderer.setAnimationLoop(now=>{
