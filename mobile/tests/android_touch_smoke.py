@@ -109,9 +109,9 @@ try:
     cdp.evaluate("""(()=>{
         window.orbDrawFrames=0;window.orbErrors=[];
         const fillRect=CanvasRenderingContext2D.prototype.fillRect;
-        CanvasRenderingContext2D.prototype.fillRect=function(...args){
-            if(this.canvas.classList.contains('orb-canvas') && args[0]===0 && args[1]===0)window.orbDrawFrames++;
-            return fillRect.apply(this,args);
+        CanvasRenderingContext2D.prototype.fillRect=function(x,y,width,height){
+            if(x===0 && y===0 && this.canvas.classList.contains('orb-canvas'))window.orbDrawFrames++;
+            return fillRect.call(this,x,y,width,height);
         };
     })()""")
     cdp.evaluate("document.querySelector('.meet-atlas').click()")
@@ -144,13 +144,15 @@ try:
     print(f'PASS: live disconnected orb; {after-before} rendered frames during 10-second Android recording',flush=True)
 
     checkpoint('Checking reduced-motion preference')
-    adb('shell','settings','put','global','animator_duration_scale','0')
+    # WebView does not refresh this OS preference in-place on every Android image.
+    # Exercise the browser media-query change path directly, without faking orb state.
+    cdp.call('Emulation.setEmulatedMedia', {'features':[{'name':'prefers-reduced-motion','value':'reduce'}]})
     until(lambda: cdp.evaluate("matchMedia('(prefers-reduced-motion: reduce)').matches"),10)
     time.sleep(2)
     frozen=cdp.evaluate('window.orbDrawFrames');time.sleep(1)
     assert frozen==cdp.evaluate('window.orbDrawFrames'), 'Reduced motion did not settle to a static orb'
     proof['reduced_motion_stops_drawing']=True
-    adb('shell','settings','put','global','animator_duration_scale','1')
+    cdp.call('Emulation.setEmulatedMedia', {'features':[{'name':'prefers-reduced-motion','value':'no-preference'}]})
     until(lambda: cdp.evaluate(f'window.orbDrawFrames>{frozen}'),10)
 
     checkpoint('Checking actual orb drawing pauses in background')
@@ -170,6 +172,7 @@ try:
     assert closed==cdp.evaluate('window.orbDrawFrames'), 'Disposed orb kept drawing'
     proof['closing_view_stops_drawing']=True
     (OUT/'orb-live-verification.json').write_text(json.dumps(proof,indent=2),encoding='utf-8')
+    cdp.call('Emulation.setEmulatedMedia', {'features':[]})
     adb('shell','settings','put','global','animator_duration_scale',original_motion_scale)
     print('PASS: reduced motion, background pause, resume and view disposal',flush=True)
 
