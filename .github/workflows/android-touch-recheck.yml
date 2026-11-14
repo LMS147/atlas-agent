@@ -42,7 +42,7 @@ jobs:
           disable-animations: true
           ram-size: 2048M
           heap-size: 256M
-          emulator-options: -no-window -gpu swiftshader -feature -Vulkan -no-snapshot -noaudio -no-boot-anim -no-metrics
+          emulator-options: -no-window -gpu lavapipe -feature -Vulkan -no-snapshot -noaudio -no-boot-anim -no-metrics
           pre-emulator-launch-script: adb start-server
           script: |
             adb install -r $(find apk -name '*-Signed.apk' -print -quit)

@@ -39,7 +39,7 @@ def collect_diagnostics(output, cdp=None, run=subprocess.run):
         capture('screen.png', lambda: command(['adb', 'exec-out', 'screencap', '-p'], binary=True))
         capture('host-memory.txt', lambda: command(['free', '-m']))
         capture('host-processes.txt', lambda: command(['ps', '-eo', 'pid,ppid,rss,args']))
-        capture('host-kernel.txt', lambda: command(['dmesg', '--ctime']))
+        capture('host-kernel.txt', lambda: command(['sudo', '-n', 'dmesg', '--ctime']))
         capture('diagnostic-errors.json', lambda: json.dumps(errors, indent=2))
     except Exception:
         # Even a full/unwritable artifact directory must not mask the test failure.
