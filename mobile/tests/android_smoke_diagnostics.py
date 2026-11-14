@@ -32,7 +32,7 @@ def collect_diagnostics(output, cdp=None, run=subprocess.run):
             capture('page.txt', lambda: cdp.evaluate('document.body.innerText'))
             capture('page.html', lambda: cdp.evaluate('document.documentElement.outerHTML'))
             capture('input-state.json', lambda: json.dumps(cdp.evaluate("({focus:document.activeElement.id,tokenLength:document.querySelector('#token')?.value.length,server:document.querySelector('#server')?.value})")))
-            capture('orb-state.json', lambda: json.dumps(cdp.evaluate("({frames:window.orbFrames,reducedMotion:matchMedia('(prefers-reduced-motion: reduce)').matches,hidden:document.hidden,errors:window.orbErrors,diagnostics:window.readOrbDiagnostics?.()})"), indent=2))
+            capture('orb-state.json', lambda: json.dumps(cdp.evaluate("({frames:window.orbDrawFrames,reducedMotion:matchMedia('(prefers-reduced-motion: reduce)').matches,hidden:document.hidden,errors:window.orbErrors,diagnostics:window.readOrbDiagnostics?.()})"), indent=2))
         # Each item runs even if the WebView socket or emulator has disappeared.
         capture('adb-devices.txt', lambda: command(['adb', 'devices', '-l']))
         capture('adb-state.txt', lambda: command(['adb', 'get-state']))
