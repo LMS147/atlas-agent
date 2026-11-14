@@ -7,7 +7,7 @@ on:
       source_run_id:
         description: 'Successful native build run containing atlas-hybrid-android-apk'
         required: true
-        default: '41308258828'
+        default: '43578254897'
 permissions:
   contents: read
   actions: read
@@ -21,7 +21,7 @@ jobs:
         with:
           name: atlas-hybrid-android-apk
           path: apk
-          run-id: ${{ inputs.source_run_id || '41308258828' }}
+          run-id: ${{ inputs.source_run_id || '43578254897' }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/setup-python@v5
         with:
@@ -40,6 +40,10 @@ jobs:
           target: google_apis
           profile: pixel_2
           disable-animations: true
+          ram-size: 2048M
+          heap-size: 256M
+          emulator-options: -no-window -gpu swiftshader -feature -Vulkan -no-snapshot -noaudio -no-boot-anim -no-metrics
+          pre-emulator-launch-script: adb start-server
           script: |
             adb install -r $(find apk -name '*-Signed.apk' -print -quit)
             python mobile/tests/android_touch_smoke.py
