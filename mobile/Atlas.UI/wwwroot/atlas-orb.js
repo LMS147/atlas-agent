@@ -11,9 +11,10 @@ export const STATES = Object.freeze({
 });
 
 export function createAtlasOrb(canvas, stage, receiver, compact=false) {
-    return DotNet.createJSObjectReference(buildAtlasOrb(canvas, stage, {
+    // InvokeAsync<IJSObjectReference> creates the handle; return the actual object.
+    return buildAtlasOrb(canvas, stage, {
         compact, active:false, onFailure:()=>receiver.invokeMethodAsync('RendererFailed').catch(()=>{})
-    }));
+    });
 }
 
 export function buildAtlasOrb(canvas, stage, options={}) {
