@@ -16,26 +16,31 @@
             {
                 <button class="@(State.Page==page ? "active" : "")" disabled="@State.Busy" aria-current="@(State.Page==page ? "page" : null)" @onclick="()=>Navigate(page)"><span class="nav-icon"><AtlasIcon Name="@PageIcon(page)" /></span><span>@(page)</span></button>
             }
-            <button id="workspace-more-button" class="@(State.DrawerOpen || !primaryPages.Contains(State.Page) ? "active" : "")" aria-label="More pages" aria-controls="workspace-drawer" aria-expanded="@State.DrawerOpen" @onclick='()=>OpenDrawer("workspace-more-button")'><span class="nav-icon"><AtlasIcon Name="menu" /></span><span>More</span></button>
+            <button id="workspace-more-button" class="@(State.DrawerOpen || !primaryPages.Contains(State.Page) ? "active" : "")" aria-label="More workspace tools" aria-controls="workspace-drawer" aria-expanded="@State.DrawerOpen" @onclick='()=>OpenDrawer("workspace-more-button")'><span class="nav-icon"><AtlasIcon Name="menu" /></span><span>More</span></button>
         </nav>
     }
     <main inert="@(State.DrawerOpen ? "" : null)">
         @if(State.Busy){<div class="loading" role="status">Working…</div>}
         @if(State.Error is not null){<div class="alert error" role="alert">@State.Error</div>}
         @if(State.Notice is not null){<div class="alert notice" role="status">@State.Notice</div>}
-        @if(!State.Connected || State.Page=="Setup"){<Setup />}
+        @if(!State.Connected || State.Page=="Setup"){companionMounted=false;<Setup />}
         else
         {
             @switch(State.Page)
             {
                 case "Chat":<Chat />break;
-                case "Atlas":<Companion />break;
+                case "Atlas":break;
                 case "Conversations":<Conversations />break;
                 case "Memory":<Memory />break;
                 case "Files":<Files />break;
                 case "Tools":<Tools />break;
                 case "Profile":<ProfilePage />break;
                 case "Settings":<Settings />break;
+            }
+            @if(State.Page=="Atlas" || companionMounted)
+            {
+                companionMounted=true;
+                <div hidden="@(State.Page!="Atlas")"><Companion Active="@(State.Page=="Atlas")" /></div>
             }
         }
     </main>
@@ -51,7 +56,8 @@
             <nav class="drawer-navigation" aria-label="Workspace pages">
                 @foreach(var page in drawerPages)
                 {
-                    <button class="@(State.Page==page ? "active" : "")" disabled="@State.Busy" aria-current="@(State.Page==page ? "page" : null)" @onclick="()=>Navigate(page)"><AtlasIcon Name="@PageIcon(page)" /><span>@PageLabel(page)</span></button>
+                    @if(page is "Chat" or "Tools" or "Profile" or "Settings"){<span class="eyebrow">@(page switch {"Chat"=>"Workspace","Tools"=>"Maintenance","Profile"=>"Agent","Settings"=>"Connection",_=>"Workspace"})</span>}
+                    <button class="@(State.Page==page ? "active" : "")" disabled="@State.Busy" aria-current="@(State.Page==page ? "page" : null)" @onclick="()=>Navigate(page)"><AtlasIcon Name="@PageIcon(page)" /><span><strong>@PageLabel(page)</strong><small>@PageDescription(page)</small></span><span aria-hidden="true">›</span></button>
                 }
             </nav>
             <div class="drawer-footer"><AtlasIcon Name="lock" /><span>Your server. Your workspace.</span></div>
@@ -61,11 +67,11 @@
 </CascadingValue>
 @code {
     private readonly string[] primaryPages=["Chat","Memory","Atlas","Files"];
-    private readonly string[] drawerPages=["Chat","Conversations","Memory","Profile","Files","Tools","Settings"];
+    private readonly string[] drawerPages=["Chat","Conversations","Memory","Files","Tools","Profile","Settings"];
     private ElementReference drawer;
-    private IJSObjectReference? navigation;
+    private IJSObjectReference? navigation,layout;
     private DotNetObjectReference<AtlasRoot>? reference;
-    private bool syncedDrawer,disposed;
+    private bool syncedDrawer,disposed,companionMounted;
     private string openerId="workspace-more-button";
     protected override async Task OnInitializedAsync(){State.Changed+=OnChanged;await State.InitializeAsync();}
     private void OnChanged()=>_ = InvokeAsync(StateHasChanged);
@@ -76,19 +82,22 @@
     private Task Navigate(string page){CloseDrawer();return State.NavigateAsync(page);}
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if(disposed || syncedDrawer==State.DrawerOpen)return;
-        syncedDrawer=State.DrawerOpen;
+        if(disposed)return;
         try
         {
             var js=Services.GetService(typeof(IJSRuntime)) as IJSRuntime;if(js is null)return;
             navigation??=await js.InvokeAsync<IJSObjectReference>("import","./_content/Atlas.UI/atlas-navigation.js");
             if(disposed){await navigation.DisposeAsync();navigation=null;return;}
+            if(firstRender)layout=await navigation.InvokeAsync<IJSObjectReference>("observeLayout");
+            if(syncedDrawer==State.DrawerOpen)return;
+            syncedDrawer=State.DrawerOpen;
             if(State.DrawerOpen){reference??=DotNetObjectReference.Create(this);await navigation.InvokeVoidAsync("openDrawer",drawer,reference,openerId);}
             else await navigation.InvokeVoidAsync("closeDrawer");
         }
         catch(JSException){}catch(InvalidOperationException){}
     }
-    private static string PageLabel(string page) => page switch { "Profile" => "Agent profile", _ => page };
+    private static string PageLabel(string page) => page switch { "Profile" => "Agent profile", "Tools" => "Maintenance", "Settings" => "Connection settings", _ => page };
+    private static string PageDescription(string page) => page switch { "Chat"=>"Continue your conversation", "Conversations"=>"Browse saved chats", "Memory"=>"Manage personal context", "Profile"=>"Read Atlas’s identity", "Files"=>"Browse workspace documents", "Tools"=>"Preview memory cleanup", _=>"Server address and local cache" };
     private static string PageIcon(string page) => page switch
     {
         "Atlas" => "spark", "Chat" => "chat", "Conversations" => "history",
@@ -99,6 +108,7 @@
     {
         disposed=true;State.Changed-=OnChanged;
         try{if(navigation is not null){await navigation.InvokeVoidAsync("closeDrawer");await navigation.DisposeAsync();}}catch(JSException){}catch(InvalidOperationException){}
+        try{if(layout is not null){await layout.InvokeVoidAsync("dispose");await layout.DisposeAsync();}}catch(JSException){}catch(InvalidOperationException){}
         reference?.Dispose();
     }
 }

@@ -1,4 +1,4 @@
-<section class="page"><span class="eyebrow">YOUR WORKSPACE</span><h1>Tools</h1><p class="muted">Run workspace maintenance with a preview before changes are applied.</p>
+<section class="page"><span class="eyebrow">YOUR WORKSPACE</span><h1>Maintenance</h1><p class="muted">Run workspace maintenance with a preview before changes are applied.</p>
 <article class="card"><h2>Memory cleanup</h2><p>Find exact duplicate facts and repeated blank lines. Unique memories are preserved.</p><button disabled="@State.Busy" @onclick="Preview">Preview cleanup</button>
 @if(plan is not null){<div role="status"><p>@plan.RemovedEntries duplicate entries · @plan.BeforeChars → @plan.AfterChars characters.</p><p>Changes affect this server workspace and are backed up by the server. A changed revision requires a fresh preview.</p><div class="toolbar"><button class="primary" disabled="@State.Busy" @onclick="Apply">Apply cleanup…</button><button disabled="@State.Busy" @onclick="()=>plan=null">Cancel</button></div></div>}
 </article>

@@ -13,14 +13,14 @@ async def main():
  origin=f'http://127.0.0.1:{server.server_port}' 
  async with async_playwright() as p:
   browser=await p.chromium.launch(executable_path=shutil.which('google-chrome') or shutil.which('chromium'),headless=True,args=['--no-sandbox','--enable-unsafe-swiftshader','--use-gl=angle','--use-angle=swiftshader'])
-  for width,height in [(390,844),(1440,1000),(320,700)]:
+  for width,height in [(360,800),(390,844),(768,1024),(1440,1000),(320,700)]:
    page=await browser.new_page(viewport={'width':width,'height':height},device_scale_factor=1)
-   for name in ['setup','chat','conversation','settings','drawer']:
+   for name in ['setup','setup-loading','setup-error','chat','conversation','cached-chat','memory-empty','memory','companion','files','tools','profile','settings','drawer']:
     await page.goto(f'{origin}/{name}.html')
     await page.screenshot(path=str(ROOT/f'{name}-{width}.png'),full_page=True,animations='disabled')
     problems=await page.evaluate('''() => ({overflow:document.documentElement.scrollWidth>innerWidth,controls:[...document.querySelectorAll('input,button,textarea,select')].filter(e=>e.getBoundingClientRect().width>0&&e.getBoundingClientRect().right>innerWidth+1).map(e=>e.outerHTML.slice(0,100))})''')
     print(name,width,problems)
-    if name!='setup':
+    if not name.startswith('setup'):
      nav=page.locator('.bottom-navigation')
      assert await nav.locator('button').count()==5
      box=await nav.bounding_box()
@@ -30,7 +30,7 @@ async def main():
      drawer_box=await page.locator('.workspace-drawer').bounding_box()
      assert abs(drawer_box['x'])<1, drawer_box
      assert await page.locator('.drawer-navigation button').count()==7
-     assert await page.locator('.drawer-navigation .active').inner_text()=='Settings'
+     assert await page.locator('.drawer-navigation .active strong').inner_text()=='Connection settings'
      assert await page.locator('main').get_attribute('inert') is not None
      await page.evaluate("""async()=>{
       const navigation=await import('./_content/Atlas.UI/atlas-navigation.js');
@@ -49,7 +49,35 @@ async def main():
      await page.wait_for_function('window.drawerClosed===true')
      assert await page.evaluate("document.activeElement.id")=='workspace-more-button' 
     assert not problems['overflow'], f'{name} at {width}px overflows the viewport'
-    assert not problems['controls'] or name!='setup', f'Setup controls clipped at {width}px'
+    assert not problems['controls'], f'Setup controls clipped at {width}px'
+    if name=='companion':
+     assert await page.locator('.character-fallback:visible').count()==1
+     assert await page.locator('.atlas-stage canvas:visible').count()==0
+     assert await page.locator('.character-controls:visible').count()==0
+    if name=='profile':
+     assert await page.locator('.profile-document h1').inner_text()=='Atlas'
+     assert await page.locator('.profile-document li').count()==3
+   # Text scaling and a resized viewport exercise layout, not a native keyboard.
+   await page.goto(f'{origin}/files.html')
+   await page.add_style_tag(content='body,button,input,textarea,select,small{font-size:20px!important}')
+   assert await page.evaluate('document.documentElement.scrollWidth<=innerWidth')
+   await page.screenshot(path=str(ROOT/f'files-large-text-{width}.png'),full_page=True)
+   await page.goto(f'{origin}/conversation.html')
+   await page.set_viewport_size({'width':width,'height':420})
+   await page.evaluate("""async()=>{
+    window.DotNet={createJSObjectReference:x=>x};
+    const navigation=await import('./_content/Atlas.UI/atlas-navigation.js');
+    window.layout=navigation.observeLayout();
+    const input=document.querySelector('.composer textarea');input.value='A long editable message. '.repeat(80);input.dispatchEvent(new Event('input',{bubbles:true}));
+    input.focus();window.scrollTo(0,document.body.scrollHeight);
+   }""")
+   await page.wait_for_timeout(100)
+   assert await page.evaluate("""() => {
+    const input=document.querySelector('.composer textarea'),composer=document.querySelector('.composer').getBoundingClientRect(),nav=document.querySelector('.bottom-navigation').getBoundingClientRect();
+    return input.clientHeight<=162 && input.scrollHeight>input.clientHeight && composer.bottom<=nav.top+1;
+   }""")
+   await page.screenshot(path=str(ROOT/f'chat-reduced-height-{width}.png'),full_page=True)
+   await page.evaluate('layout.dispose()')
    await page.close()
   page=await browser.new_page(viewport={'width':390,'height':600})
   errors=[]
