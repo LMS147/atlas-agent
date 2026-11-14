@@ -77,7 +77,10 @@ class CDP:
 cdp = None
 live_logcat = None
 live_output = None
+original_motion_scale = None
 try:
+    original_motion_scale = adb('shell', 'settings', 'get', 'global', 'animator_duration_scale')
+    adb('shell', 'settings', 'put', 'global', 'animator_duration_scale', '1')
     adb('logcat', '-c')
     live_output = (OUT/'live-logcat.txt').open('wb')
     live_logcat = subprocess.Popen(['adb', 'logcat', '-v', 'threadtime'], stdout=live_output, stderr=subprocess.STDOUT)
@@ -104,22 +107,12 @@ try:
     (OUT/'before-orb.html').write_text(str(cdp.evaluate('document.documentElement.outerHTML')), encoding='utf-8')
     # Exercise the bundled particle orb through Blazor before any server login.
     cdp.evaluate("""(()=>{
-        window.orbFrames=0;window.orbErrors=[];
-        const nativeRAF=window.requestAnimationFrame.bind(window);
-        window.requestAnimationFrame=cb=>nativeRAF(t=>{window.orbFrames++;cb(t)});
-        const create=DotNet.createJSObjectReference;
-        DotNet.createJSObjectReference=function(value){
-            if(value && typeof value.getDiagnostics==='function' && typeof value.setState==='function'){
-                window.readOrbDiagnostics=()=>value.getDiagnostics();
-                const setState=value.setState;
-                value.setState=function(...args){try{return setState.apply(this,args);}catch(error){window.orbErrors.push(String(error));throw error;}};
-            }
-            return create.call(this,value);
+        window.orbDrawFrames=0;window.orbErrors=[];
+        const fillRect=CanvasRenderingContext2D.prototype.fillRect;
+        CanvasRenderingContext2D.prototype.fillRect=function(...args){
+            if(this.canvas.classList.contains('orb-canvas') && args[0]===0 && args[1]===0)window.orbDrawFrames++;
+            return fillRect.apply(this,args);
         };
-        for(const name of ['drawImage','fillRect','arc','stroke','setTransform']){
-            const original=CanvasRenderingContext2D.prototype[name];
-            CanvasRenderingContext2D.prototype[name]=function(...args){try{return original.apply(this,args);}catch(error){window.orbErrors.push(name+': '+String(error));throw error;}};
-        }
     })()""")
     cdp.evaluate("document.querySelector('.meet-atlas').click()")
     until(lambda: cdp.evaluate("!!document.querySelector('.companion-dialog')"))
@@ -127,24 +120,58 @@ try:
     until(lambda: cdp.evaluate("!!document.querySelector('[data-orb-ready=\"true\"] canvas:not([hidden])') || document.body.innerText.includes(\"Orb display details\")"), 45)
     print('Atlas native particle orb ready:', cdp.evaluate("!!document.querySelector('[data-orb-ready=\"true\"] canvas:not([hidden])')"))
     animated=cdp.evaluate("!!document.querySelector('[data-orb-ready=\"true\"] canvas:not([hidden])')")
-    checkpoint('Orb renderer ready' if animated else 'Orb fallback ready')
-    if animated:
-        until(lambda: cdp.evaluate('window.orbFrames>2 || !!document.querySelector(\".orb-fallback:not([hidden])\")'))
-        animated=cdp.evaluate('!document.querySelector(\".orb-canvas\").hidden')
-    if animated:
-        checkpoint('Checking orb background pause')
-        adb('shell', 'input', 'keyevent', '3')
-        time.sleep(1)
-        paused=cdp.evaluate('window.orbFrames')
-        time.sleep(1)
-        assert paused==cdp.evaluate('window.orbFrames'), 'Orb kept rendering in background'
-        adb('shell', 'monkey', '-p', PACKAGE, '-c', 'android.intent.category.LAUNCHER', '1')
-        until(lambda: cdp.evaluate(f'window.orbFrames>{paused}'))
-    else:
-        assert cdp.evaluate("document.querySelectorAll('.orb-fallback:not([hidden])').length===1 && document.querySelector('.orb-canvas').hidden"), 'Expected one orb fallback and no overlapping canvas'
-        print('PASS: matching static orb fallback; animation lifecycle not exercised on this emulator', flush=True)
+    checkpoint('Verifying continuously animated orb without a server connection')
+    # The main Android proof requires the actual animated canvas, not fallback.
+    assert animated, 'Live-orb acceptance requires an animated canvas on this emulator'
+    until(lambda: cdp.evaluate("!matchMedia('(prefers-reduced-motion: reduce)').matches"), 10)
+    until(lambda: cdp.evaluate('window.orbDrawFrames>3'))
+    assert cdp.evaluate("document.querySelector('.atlas-orb').dataset.presence==='disconnected'"), 'Expected an offline, locally rendered orb'
+    proof={'state':'disconnected','source':'installed Android APK; bundled Canvas renderer','recording':'atlas-orb-live-android.mp4'}
+    before=cdp.evaluate('window.orbDrawFrames')
+    pixels_before=cdp.evaluate("document.querySelector('.orb-canvas').toDataURL()")
+    # ADB records the actual Android screen; no generated/synthetic video.
+    remote='/sdcard/atlas-orb-live-android.mp4'
+    subprocess.run(['adb','shell','screenrecord','--time-limit','10','--size','720x1280','--bit-rate','2000000',remote],check=True,timeout=25)
+    adb('pull',remote,str(OUT/'atlas-orb-live-android.mp4'))
+    after=cdp.evaluate('window.orbDrawFrames')
+    pixels_after=cdp.evaluate("document.querySelector('.orb-canvas').toDataURL()")
+    assert after-before>=30, f'Insufficient orb drawing during recording: {after-before}'
+    assert pixels_before!=pixels_after, 'The orb pixels did not change during the recording'
+    proof['rendered_frames_during_recording']=after-before
+    proof['pixels_changed']=True
+    with (OUT/'atlas-orb-live-android.png').open('wb') as screen:
+        subprocess.run(['adb','exec-out','screencap','-p'],stdout=screen,check=True,timeout=15)
+    print(f'PASS: live disconnected orb; {after-before} rendered frames during 10-second Android recording',flush=True)
+
+    checkpoint('Checking reduced-motion preference')
+    adb('shell','settings','put','global','animator_duration_scale','0')
+    until(lambda: cdp.evaluate("matchMedia('(prefers-reduced-motion: reduce)').matches"),10)
+    time.sleep(2)
+    frozen=cdp.evaluate('window.orbDrawFrames');time.sleep(1)
+    assert frozen==cdp.evaluate('window.orbDrawFrames'), 'Reduced motion did not settle to a static orb'
+    proof['reduced_motion_stops_drawing']=True
+    adb('shell','settings','put','global','animator_duration_scale','1')
+    until(lambda: cdp.evaluate(f'window.orbDrawFrames>{frozen}'),10)
+
+    checkpoint('Checking actual orb drawing pauses in background')
+    adb('shell','input','keyevent','3')
+    until(lambda: cdp.evaluate('document.hidden'),10)
+    time.sleep(1)
+    paused=cdp.evaluate('window.orbDrawFrames');time.sleep(1)
+    assert paused==cdp.evaluate('window.orbDrawFrames'), 'Orb kept drawing in background'
+    proof['background_pauses_drawing']=True
+    adb('shell','monkey','-p',PACKAGE,'-c','android.intent.category.LAUNCHER','1')
+    until(lambda: cdp.evaluate(f'!document.hidden && window.orbDrawFrames>{paused}'))
+    proof['resume_restarts_drawing']=True
     cdp.evaluate("document.querySelector('[aria-label=\"Close Atlas preview\"]').click()")
     until(lambda: cdp.evaluate("!document.querySelector('.companion-dialog')"))
+    time.sleep(.5)
+    closed=cdp.evaluate('window.orbDrawFrames');time.sleep(1)
+    assert closed==cdp.evaluate('window.orbDrawFrames'), 'Disposed orb kept drawing'
+    proof['closing_view_stops_drawing']=True
+    (OUT/'orb-live-verification.json').write_text(json.dumps(proof,indent=2),encoding='utf-8')
+    adb('shell','settings','put','global','animator_duration_scale',original_motion_scale)
+    print('PASS: reduced motion, background pause, resume and view disposal',flush=True)
 
     def tap(selector):
         # Scrolling is only to position a control; input/click events come from ADB touches.
@@ -182,6 +209,11 @@ try:
     until(lambda: cdp.evaluate("document.querySelector('input[type=checkbox]').checked") != before, 10)
     print('PASS: native text input, Connect callback/error recovery, and checkbox touch')
 finally:
+    if original_motion_scale is not None:
+        try:
+            adb('shell','settings','put','global','animator_duration_scale',original_motion_scale)
+        except Exception:
+            pass
     if live_logcat is not None:
         try:
             live_logcat.terminate()
