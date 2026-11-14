@@ -1,5 +1,6 @@
 using Android.OS;
 using Android.Speech.Tts;
+using TextToSpeech = Android.Speech.Tts.TextToSpeech;
 namespace Atlas.Mobile;
 
 internal static class AndroidSpeech
@@ -57,6 +58,7 @@ internal static class AndroidSpeech
         public Task Begin(string id){lock(sync){current=id;completion=new(TaskCreationOptions.RunContinuationsAsynchronously);return completion.Task;}}
         public override void OnStart(string? id){lock(sync){if(id==current)playback(true);}}
         public override void OnDone(string? id){lock(sync){if(id!=current)return;playback(false);completion?.TrySetResult();current=null;}}
+        [Obsolete("Required compatibility callback for Android TTS engines.")]
         public override void OnError(string? id){lock(sync){if(id!=current)return;playback(false);completion?.TrySetException(new NotSupportedException("TTS playback failed."));current=null;}}
         public override void OnStop(string? id,bool interrupted){lock(sync){if(id!=current)return;playback(false);completion?.TrySetCanceled();current=null;}}
         public void End(){lock(sync){current=null;playback(false);completion?.TrySetCanceled();}}
