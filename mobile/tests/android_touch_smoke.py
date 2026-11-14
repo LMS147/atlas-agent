@@ -77,10 +77,21 @@ try:
         left, top, _, _ = map(int, re.findall(r'\d+', view.attrib['bounds']))
         return left, top
     left, top = until(webview_origin, 60)
-    # Exercise the bundled 3D module through Blazor before any server login.
+    # Exercise the bundled particle orb through Blazor before any server login.
+    cdp.evaluate("window.orbFrames=0;const nativeRAF=window.requestAnimationFrame.bind(window);window.requestAnimationFrame=cb=>nativeRAF(t=>{window.orbFrames++;cb(t)});")
     cdp.evaluate("document.querySelector('.meet-atlas').click()")
-    until(lambda: cdp.evaluate("!!document.querySelector('[data-atlas-ready=\"true\"]') || document.body.innerText.includes(\"3D isn't available\")"), 45)
-    print('Atlas native WebGL ready:', cdp.evaluate("!!document.querySelector('[data-atlas-ready=\"true\"]')"))
+    until(lambda: cdp.evaluate("!!document.querySelector('[data-orb-ready=\"true\"]') || document.body.innerText.includes(\"Orb display details\")"), 45)
+    print('Atlas native particle orb ready:', cdp.evaluate("!!document.querySelector('[data-orb-ready=\"true\"]')"))
+    animated=cdp.evaluate("!!document.querySelector('[data-orb-ready=\"true\"]')")
+    if animated:
+        until(lambda: cdp.evaluate('window.orbFrames>2'))
+        adb('shell', 'input', 'keyevent', '3')
+        time.sleep(1)
+        paused=cdp.evaluate('window.orbFrames')
+        time.sleep(1)
+        assert paused==cdp.evaluate('window.orbFrames'), 'Orb kept rendering in background'
+        adb('shell', 'monkey', '-p', PACKAGE, '-c', 'android.intent.category.LAUNCHER', '1')
+        until(lambda: cdp.evaluate(f'window.orbFrames>{paused}'))
     cdp.evaluate("document.querySelector('[aria-label=\"Close Atlas preview\"]').click()")
     until(lambda: cdp.evaluate("!document.querySelector('.companion-dialog')"))
 

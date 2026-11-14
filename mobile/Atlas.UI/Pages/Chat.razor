@@ -6,12 +6,12 @@
         @if(State.Repo.Current?.HasMore==true){<button disabled="@State.Busy" @onclick="()=>State.Run(()=>State.Repo.HistoryAsync(true))">Load earlier</button>}
     </div>
     <div class="messages" role="log" aria-label="Conversation messages">
-        @if(!State.Repo.Messages.Any()){<div class="empty chat-welcome"><img class="welcome-portrait" src="_content/Atlas.UI/atlas/mascot.webp" alt="Atlas" width="80" height="112" /><span class="eyebrow">A FRESH START</span><h2>What’s on your mind?</h2><p>Bring a question, an idea, or a task.<br />Let’s work through it together.</p><div class="starter-grid"><button disabled="@State.Busy" @onclick='()=>draft="Help me turn an idea into a clear plan."'><AtlasIcon Name="spark" /><strong>Explore an idea</strong><span>Find a useful starting point</span></button><button disabled="@State.Busy" @onclick='()=>draft="Help me prioritize my tasks and make a plan for today."'><AtlasIcon Name="memory" /><strong>Make a plan</strong><span>Turn your next steps into action</span></button></div></div>}
+        @if(!State.Repo.Messages.Any()){<div class="empty chat-welcome"><AtlasOrb Compact="true" /><span class="eyebrow">A FRESH START</span><h2>What’s on your mind?</h2><p>Bring a question, an idea, or a task.<br />Let’s work through it together.</p><div class="starter-grid"><button disabled="@State.Busy" @onclick='()=>draft="Help me turn an idea into a clear plan."'><AtlasIcon Name="spark" /><strong>Explore an idea</strong><span>Find a useful starting point</span></button><button disabled="@State.Busy" @onclick='()=>draft="Help me prioritize my tasks and make a plan for today."'><AtlasIcon Name="memory" /><strong>Make a plan</strong><span>Turn your next steps into action</span></button></div></div>}
         @foreach(var message in State.Repo.Messages)
         {
             <article @key="message.Id" class="message @message.Role">
-                <div class="bubble">@if(message.Role!="user"){<img class="atlas-avatar message-avatar" src="_content/Atlas.UI/atlas/avatar.webp" alt="" width="28" height="28" />}<small>@(message.Role=="user"?"You":"Atlas")</small><MessageContent Text="@message.Text" /></div>
-                @if(message.Role=="assistant"){<button class="voice-reply" aria-label="Read this reply aloud" disabled="@(!State.SpeechAvailable || State.Speaking || !State.IsActive)" @onclick="()=>State.SpeakAsync(message.Text)"><AtlasIcon Name="voice" /> Read aloud</button>}
+                <div class="bubble">@if(message.Role!="user"){<img class="atlas-avatar message-avatar" src="_content/Atlas.UI/atlas/orb.svg" alt="" width="28" height="28" />}<small>@(message.Role=="user"?"You":"Atlas")</small><MessageContent Text="@message.Text" /></div>
+                @if(message.Role=="assistant"){<button class="voice-reply" aria-label="Read this reply aloud" disabled="@(!State.SpeechAvailable || State.SpeechBusy || !State.IsActive)" @onclick="()=>State.SpeakAsync(message.Text)"><AtlasIcon Name="voice" /> Read aloud</button>}
                 @if(timestamps){<small class="muted">@DateTimeOffset.FromUnixTimeMilliseconds(message.CreatedAt).ToLocalTime().ToString("HH:mm")</small>}
                 @if(message.Role=="user" && message.Delivery!=Delivery.Sent)
                 {
@@ -30,7 +30,7 @@
             <small class="muted">In progress · confirmed when saved</small></div></article>
         }
     </div>
-    @if(State.Speaking){<div class="speech-status" role="status">Atlas is speaking <button @onclick="State.StopSpeaking">Stop voice</button></div>}
+    @if(State.SpeechBusy){<div class="speech-status" role="status">@(State.Speaking?"Atlas is speaking":State.PlaybackFeedbackAvailable?"Preparing voice…":"Voice playback requested") <button @onclick="State.StopSpeaking">Stop voice</button></div>}
     @if(State.Busy && State.Repo.Messages.Any(x=>x.Delivery==Delivery.Pending)){<div class="chat-processing" role="status" aria-live="polite"><strong>@(State.Repo.StreamPhase=="replying"?"Atlas is replying…":"Atlas is preparing your reply…")</strong><span>You can leave the app. Check for the saved reply if the connection is interrupted.</span></div>}
     <div class="composer-area">
     <form class="composer" @onsubmit="Send" @onsubmit:preventDefault>

@@ -54,7 +54,7 @@ CI compiles Razor, executes HTTP/SQLite tests, builds the Android APK, compiles 
 
 ## Atlas companion
 
-The Atlas page and setup preview contain a live stylized 3D character. Drag to turn, wave, or tap Say hello. Assistant replies have explicit Read aloud controls. Speech uses the installed device voice and stops when the app deactivates. Original character artwork is used for the header and reply avatars. See [character implementation](../docs/atlas-character.md) for model and lip-sync scope.
+The Atlas page, setup preview and empty Chat use a procedural blue particle orb. Say hello and Read aloud reuse the installed device voice. On Android, orb pulses begin at the native utterance-start event and end on completion/cancel. No microphone is used. The header, replies, launcher, splash and fallback share the orb identity. See [orb implementation](../docs/atlas-character.md) for rendering, lifecycle and voice limitations.
 
 ## Navigation
 

@@ -1,13 +1,13 @@
 <section class="page companion-page">
-    <span class="eyebrow">MEET YOUR COMPANION</span><h1>Your companion</h1>
-    <p class="muted">Your ideas. A familiar face. A voice when you need it.</p>
-    <AtlasCharacter Visible="@Active" />
+    <h1>Atlas</h1>
+    <p class="muted">Your AI companion.</p>
+    <AtlasOrb Visible="@Active" />
     <div class="companion-actions">
-        <button class="primary" disabled="@(!State.SpeechAvailable || State.Speaking || !State.IsActive)" @onclick="Hello">Say hello</button>
-        <button disabled="@(!State.SpeechAvailable || State.Speaking || LatestReply is null || !State.IsActive)" @onclick="ReadLatest">Read latest reply</button>
-        @if(State.Speaking){<button class="danger" @onclick="State.StopSpeaking">Stop voice</button>}
+        <button class="primary" disabled="@(!State.SpeechAvailable || State.SpeechBusy || !State.IsActive)" @onclick="Hello">Say hello</button>
+        <button disabled="@(!State.SpeechAvailable || State.SpeechBusy || LatestReply is null || !State.IsActive)" @onclick="ReadLatest">Read latest reply</button>
+        @if(State.SpeechBusy){<button class="danger" @onclick="State.StopSpeaking">Stop voice</button>}
     </div>
-    <p class="companion-note muted">Voice uses your device’s text-to-speech settings and only plays when you ask. In 3D mode, drag or use the arrow keys to turn Atlas.</p>
+    <p class="companion-note muted">Voice uses your device’s text-to-speech settings and only plays when you ask.</p>
 </section>
 @code {
     [Parameter] public bool Active {get;set;} = true;
